@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>달토끼의 송편 모으기</title>
+  <title>달토끼의 파티 준비</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
@@ -519,20 +519,20 @@ function render() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // 타이틀
+    // 대제목 변경
     ctx.fillStyle = "#fde047";
     ctx.font = "34px 'Jua', sans-serif";
-    ctx.fillText("달토끼의 송편 모으기", canvas.width / 2, canvas.height / 2 - 80);
+    ctx.fillText("달토끼의 파티 준비", canvas.width / 2, canvas.height / 2 - 80);
 
     // 설명문
     ctx.fillStyle = "#e2e8f0";
     ctx.font = "18px 'Jua', sans-serif";
     ctx.fillText("화면을 손가락으로 밀어 토끼를 움직이세요!", canvas.width / 2, canvas.height / 2 - 35);
 
-    // 주의 문구 (중앙 정렬 보완)
+    // 주의 문구 수정 및 정확한 중앙 정렬
     ctx.fillStyle = "#fca5a5";
     ctx.font = "17px 'Jua', sans-serif";
-    ctx.fillText("밤송이는 피하고 송편만 담아요!", canvas.width / 2, canvas.height / 2 - 2);
+    ctx.fillText("! 밤송이는 피하고 송편만 담아요", canvas.width / 2, canvas.height / 2 - 2);
 
     ctx.restore();
 
