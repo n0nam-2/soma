@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
   <style>
     * {
-      touch-action: none; /* 모바일에서 당겨서 새로고침, 핀치 줌 방지 */
+      touch-action: none;
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
@@ -39,7 +39,7 @@
     canvas {
       width: 100%;
       height: 100%;
-      object-fit: contain; /* 비율 유지하며 화면 꽉 채움 */
+      object-fit: contain;
       display: block;
     }
   </style>
@@ -75,7 +75,7 @@ const player = {
 
 const startBtn = {
   x: canvas.width / 2 - 85,
-  y: canvas.height / 2 + 35,
+  y: canvas.height / 2 + 45,
   width: 170,
   height: 52,
   isHovered: false
@@ -139,7 +139,6 @@ function startGame() {
   startTimer();
 }
 
-// 캔버스 내부 실제 비율 좌표 계산
 function getCanvasCoords(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
@@ -155,7 +154,6 @@ function isInsideButton(pos, btn) {
          pos.y >= btn.y && pos.y <= btn.y + btn.height;
 }
 
-// 터치 & 마우스 공통 입력
 function handleInputMove(clientX, clientY) {
   const pos = getCanvasCoords(clientX, clientY);
   if (isStarted && !gameOver) {
@@ -172,7 +170,6 @@ function handleInputPress(clientX, clientY) {
   }
 }
 
-// 모바일 터치 이벤트
 canvas.addEventListener("touchstart", (e) => {
   if (e.touches.length > 0) {
     handleInputPress(e.touches[0].clientX, e.touches[0].clientY);
@@ -187,7 +184,6 @@ canvas.addEventListener("touchmove", (e) => {
   e.preventDefault();
 }, { passive: false });
 
-// PC 마우스 호환
 canvas.addEventListener("mousemove", (e) => handleInputMove(e.clientX, e.clientY));
 canvas.addEventListener("mousedown", (e) => handleInputPress(e.clientX, e.clientY));
 
@@ -490,9 +486,11 @@ function render() {
 
   drawRabbit(player.x, player.y, player.width, player.height);
 
+  // 상단 HUD
   ctx.fillStyle = "#fef08a";
   ctx.font = "20px 'Jua', sans-serif";
   ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.fillText(`점수  ${score}`, 18, 34);
 
   ctx.textAlign = "center";
@@ -512,23 +510,33 @@ function render() {
   ctx.font = "16px sans-serif";
   ctx.fillText(hearts, canvas.width - 18, 34);
 
+  // --- 1. 시작 대기 화면 (Start Screen) ---
   if (!isStarted) {
-    ctx.fillStyle = "rgba(10, 10, 25, 0.82)";
+    ctx.fillStyle = "rgba(10, 10, 25, 0.84)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // 타이틀
     ctx.fillStyle = "#fde047";
     ctx.font = "34px 'Jua', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("달토끼의 송편 모으기", canvas.width / 2, canvas.height / 2 - 85);
+    ctx.fillText("달토끼의 송편 모으기", canvas.width / 2, canvas.height / 2 - 80);
 
+    // 설명문
     ctx.fillStyle = "#e2e8f0";
     ctx.font = "18px 'Jua', sans-serif";
-    ctx.fillText("화면을 손가락으로 밀어 토끼를 움직이세요!", canvas.width / 2, canvas.height / 2 - 40);
+    ctx.fillText("화면을 손가락으로 밀어 토끼를 움직이세요!", canvas.width / 2, canvas.height / 2 - 35);
 
+    // 주의 문구 (중앙 정렬 보완)
     ctx.fillStyle = "#fca5a5";
-    ctx.font = "16px 'Jua', sans-serif";
-    ctx.fillText("⚠️ 밤송이는 피하고 송편만 담아요!", canvas.width / 2, canvas.height / 2 - 10);
+    ctx.font = "17px 'Jua', sans-serif";
+    ctx.fillText("밤송이는 피하고 송편만 담아요!", canvas.width / 2, canvas.height / 2 - 2);
 
+    ctx.restore();
+
+    // [게임 시작] 버튼
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(startBtn.x, startBtn.y, startBtn.width, startBtn.height, 26);
@@ -538,25 +546,35 @@ function render() {
     ctx.fill();
     ctx.restore();
 
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillStyle = "#1e1b4b";
     ctx.font = "22px 'Jua', sans-serif";
-    ctx.fillText("게임 시작", canvas.width / 2, startBtn.y + 34);
+    ctx.fillText("게임 시작", canvas.width / 2, startBtn.y + startBtn.height / 2);
+    ctx.restore();
+
     return;
   }
 
+  // --- 2. 게임 오버 화면 ---
   if (gameOver) {
     ctx.fillStyle = "rgba(10, 10, 25, 0.86)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
     ctx.fillStyle = "#fde047";
     ctx.font = "32px 'Jua', sans-serif";
-    ctx.textAlign = "center";
     const titleText = gameOverReason === "time" ? "시간이 다 되었어요!" : "밤송이에 찔렸어요!";
     ctx.fillText(titleText, canvas.width / 2, canvas.height / 2 - 45);
 
     ctx.fillStyle = "#ffffff";
     ctx.font = "23px 'Jua', sans-serif";
     ctx.fillText(`수확한 송편 점수 : ${score}점`, canvas.width / 2, canvas.height / 2 + 5);
+    ctx.restore();
 
     ctx.save();
     ctx.beginPath();
@@ -567,10 +585,13 @@ function render() {
     ctx.fill();
     ctx.restore();
 
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.fillStyle = "#1e1b4b";
     ctx.font = "21px 'Jua', sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("다시 도전하기", canvas.width / 2, restartBtn.y + 32);
+    ctx.fillText("다시 도전하기", canvas.width / 2, restartBtn.y + restartBtn.height / 2);
+    ctx.restore();
   }
 }
 
