@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>달토끼의 송편 모으기</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <style>
+    * {
+      touch-action: none; /* 모바일에서 당겨서 새로고침, 핀치 줌 방지 */
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0b0816;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+      font-family: 'Jua', sans-serif;
+      overflow: hidden;
+    }
+    #gameWrapper {
+      position: relative;
+      width: 100%;
+      max-width: 450px;
+      height: 100%;
+      max-height: 800px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* 비율 유지하며 화면 꽉 채움 */
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+<div id="gameWrapper">
+  <canvas id="gameCanvas" width="420" height="640"></canvas>
+</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let isStarted = false;
+let score = 0;
+let lives = 3;
+let gameOver = false;
+let gameOverReason = "";
+let frameCount = 0;
+
+const TOTAL_TIME = 60;
+let timeLeft = TOTAL_TIME;
+let timerInterval = null;
+
+const player = {
+  x: canvas.width / 2 - 35,
+  y: canvas.height - 95,
+  width: 70,
+  height: 85,
+  speed: 8
+};
+
+const startBtn = {
+  x: canvas.width / 2 - 85,
+  y: canvas.height / 2 + 35,
+  width: 170,
+  height: 52,
+  isHovered: false
+};
+
+const restartBtn = {
+  x: canvas.width / 2 - 85,
+  y: canvas.height / 2 + 50,
+  width: 170,
+  height: 50,
+  isHovered: false
+};
+
+const stars = [];
+for (let i = 0; i < 40; i++) {
+  stars.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * (canvas.height * 0.6),
+    r: Math.random() * 1.5 + 0.5,
+    alpha: Math.random() * 0.8 + 0.2,
+    speed: Math.random() * 0.03 + 0.01
+  });
+}
+
+const itemTypes = [
+  { type: "white", score: 10, color: "#ffffff", edgeColor: "#e2e8f0", radius: 16, speed: 3.2 },
+  { type: "pink",  score: 20, color: "#fbb6ce", edgeColor: "#f687b3", radius: 16, speed: 3.8 },
+  { type: "green", score: 30, color: "#9ae6b4", edgeColor: "#48bb78", radius: 16, speed: 4.3 },
+  { type: "chestnut", score: 0, color: "#5c3a21", radius: 18, speed: 3.6 }
+];
+
+const items = [];
+
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (isStarted && !gameOver) {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        timeLeft = 0;
+        endGame("time");
+      }
+    }
+  }, 1000);
+}
+
+function endGame(reason) {
+  gameOver = true;
+  gameOverReason = reason;
+  if (timerInterval) clearInterval(timerInterval);
+}
+
+function startGame() {
+  isStarted = true;
+  score = 0;
+  lives = 3;
+  timeLeft = TOTAL_TIME;
+  items.length = 0;
+  gameOver = false;
+  gameOverReason = "";
+  startTimer();
+}
+
+// 캔버스 내부 실제 비율 좌표 계산
+function getCanvasCoords(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+function isInsideButton(pos, btn) {
+  return pos.x >= btn.x && pos.x <= btn.x + btn.width &&
+         pos.y >= btn.y && pos.y <= btn.y + btn.height;
+}
+
+// 터치 & 마우스 공통 입력
+function handleInputMove(clientX, clientY) {
+  const pos = getCanvasCoords(clientX, clientY);
+  if (isStarted && !gameOver) {
+    player.x = Math.max(0, Math.min(canvas.width - player.width, pos.x - player.width / 2));
+  }
+}
+
+function handleInputPress(clientX, clientY) {
+  const pos = getCanvasCoords(clientX, clientY);
+  if (!isStarted) {
+    if (isInsideButton(pos, startBtn)) startGame();
+  } else if (gameOver) {
+    if (isInsideButton(pos, restartBtn)) startGame();
+  }
+}
+
+// 모바일 터치 이벤트
+canvas.addEventListener("touchstart", (e) => {
+  if (e.touches.length > 0) {
+    handleInputPress(e.touches[0].clientX, e.touches[0].clientY);
+  }
+  e.preventDefault();
+}, { passive: false });
+
+canvas.addEventListener("touchmove", (e) => {
+  if (e.touches.length > 0) {
+    handleInputMove(e.touches[0].clientX, e.touches[0].clientY);
+  }
+  e.preventDefault();
+}, { passive: false });
+
+// PC 마우스 호환
+canvas.addEventListener("mousemove", (e) => handleInputMove(e.clientX, e.clientY));
+canvas.addEventListener("mousedown", (e) => handleInputPress(e.clientX, e.clientY));
+
+function spawnItem() {
+  const rand = Math.random();
+  let selected;
+  if (rand < 0.40) selected = itemTypes[0];
+  else if (rand < 0.65) selected = itemTypes[1];
+  else if (rand < 0.80) selected = itemTypes[2];
+  else selected = itemTypes[3];
+
+  items.push({
+    x: Math.random() * (canvas.width - 60) + 30,
+    y: -25,
+    rot: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.04,
+    ...selected
+  });
+}
+
+function checkCollision(item, player) {
+  const basket = {
+    x: player.x,
+    y: player.y + 40,
+    width: player.width,
+    height: 40
+  };
+  const closeX = Math.max(basket.x, Math.min(item.x, basket.x + basket.width));
+  const closeY = Math.max(basket.y, Math.min(item.y, basket.y + basket.height));
+  const dx = item.x - closeX;
+  const dy = item.y - closeY;
+  return (dx * dx + dy * dy) < (item.radius * item.radius);
+}
+
+function drawPineTree(baseX, baseY, scale = 1) {
+  ctx.save();
+  ctx.translate(baseX, baseY);
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = "#1b1424";
+  ctx.beginPath();
+  ctx.moveTo(-7, 0);
+  ctx.quadraticCurveTo(-10, -40, -4, -80);
+  ctx.lineTo(4, -80);
+  ctx.quadraticCurveTo(8, -40, 7, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#152422";
+  const levels = [
+    { y: -75, w: 45, h: 25 },
+    { y: -95, w: 38, h: 22 },
+    { y: -112, w: 28, h: 20 }
+  ];
+  levels.forEach(lvl => {
+    ctx.beginPath();
+    ctx.moveTo(0, lvl.y - lvl.h);
+    ctx.lineTo(lvl.w, lvl.y);
+    ctx.lineTo(-lvl.w, lvl.y);
+    ctx.closePath();
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawSongpyeon(x, y, radius, color, edgeColor, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, Math.PI * 0.1, Math.PI * 0.9, false);
+  ctx.quadraticCurveTo(0, -radius * 0.9, radius * Math.cos(Math.PI * 0.1), radius * Math.sin(Math.PI * 0.1));
+  ctx.closePath();
+
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = edgeColor;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, -radius * 0.2, radius * 0.6, 0.3, Math.PI - 0.3);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+  ctx.beginPath();
+  ctx.ellipse(-radius * 0.3, -radius * 0.2, radius * 0.3, radius * 0.12, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawChestnutBurr(x, y, radius, angle) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  const spikeCount = 14;
+  const outerR = radius + 6;
+  const innerR = radius - 2;
+
+  ctx.fillStyle = "#4a2912";
+  ctx.beginPath();
+  for (let i = 0; i < spikeCount * 2; i++) {
+    const r = (i % 2 === 0) ? outerR : innerR;
+    const a = (Math.PI * 2 / (spikeCount * 2)) * i;
+    const px = Math.cos(a) * r;
+    const py = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#78350f";
+  ctx.beginPath();
+  ctx.arc(0, 2, radius * 0.65, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#d97706";
+  ctx.beginPath();
+  ctx.ellipse(0, 3, radius * 0.35, radius * 0.45, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawRabbit(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(-14, -32, 7, 22, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffccd5";
+  ctx.beginPath();
+  ctx.ellipse(-14, -32, 4, 15, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(14, -32, 7, 22, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffccd5";
+  ctx.beginPath();
+  ctx.ellipse(14, -32, 4, 15, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(0, 4, 22, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(255, 154, 162, 0.5)";
+  ctx.beginPath();
+  ctx.arc(-14, 5, 5, 0, Math.PI * 2);
+  ctx.arc(14, 5, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#2d3748";
+  ctx.beginPath();
+  ctx.arc(-8, 1, 2.5, 0, Math.PI * 2);
+  ctx.arc(8, 1, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#f687b3";
+  ctx.beginPath();
+  ctx.moveTo(0, 4);
+  ctx.lineTo(-2, 7);
+  ctx.lineTo(2, 7);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#b45309";
+  ctx.beginPath();
+  ctx.ellipse(0, 24, 28, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#d97706";
+  ctx.beginPath();
+  ctx.ellipse(0, 22, 25, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#78350f";
+  ctx.beginPath();
+  ctx.ellipse(0, 21, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(-16, 17, 5, 0, Math.PI * 2);
+  ctx.arc(16, 17, 5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function update() {
+  if (!isStarted || gameOver) return;
+
+  frameCount++;
+  if (frameCount % 40 === 0) spawnItem();
+
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i];
+    it.y += it.speed;
+    it.rot += it.rotSpeed;
+
+    if (checkCollision(it, player)) {
+      if (it.type === "chestnut") {
+        lives--;
+        if (lives <= 0) endGame("lives");
+      } else {
+        score += it.score;
+      }
+      items.splice(i, 1);
+      continue;
+    }
+
+    if (it.y > canvas.height + 30) {
+      items.splice(i, 1);
+    }
+  }
+}
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bgGrad.addColorStop(0, "#090918");
+  bgGrad.addColorStop(0.5, "#141735");
+  bgGrad.addColorStop(1, "#261d3f");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  stars.forEach(s => {
+    s.alpha += s.speed;
+    const curAlpha = (Math.sin(s.alpha) + 1) / 2 * 0.7 + 0.3;
+    ctx.fillStyle = `rgba(255, 255, 255, ${curAlpha})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  const moonX = canvas.width * 0.72;
+  const moonY = 120;
+  const moonR = 52;
+
+  const glow = ctx.createRadialGradient(moonX, moonY, moonR * 0.5, moonX, moonY, moonR * 2.2);
+  glow.addColorStop(0, "rgba(254, 240, 138, 0.4)");
+  glow.addColorStop(0.6, "rgba(253, 224, 71, 0.1)");
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  const moonGrad = ctx.createRadialGradient(moonX - 10, moonY - 10, 5, moonX, moonY, moonR);
+  moonGrad.addColorStop(0, "#fffbeb");
+  moonGrad.addColorStop(0.85, "#fef08a");
+  moonGrad.addColorStop(1, "#facc15");
+  ctx.fillStyle = moonGrad;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(202, 138, 4, 0.14)";
+  ctx.beginPath();
+  ctx.arc(moonX - 15, moonY - 10, 11, 0, Math.PI * 2);
+  ctx.arc(moonX + 18, moonY + 12, 14, 0, Math.PI * 2);
+  ctx.arc(moonX - 5, moonY + 22, 9, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#161b33";
+  ctx.beginPath();
+  ctx.arc(80, canvas.height + 140, 240, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#0f1124";
+  ctx.beginPath();
+  ctx.arc(320, canvas.height + 160, 260, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawPineTree(55, canvas.height - 40, 0.85);
+  drawPineTree(120, canvas.height - 25, 1.15);
+  drawPineTree(365, canvas.height - 35, 0.95);
+
+  ctx.fillStyle = "#0a0c1a";
+  ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+  items.forEach(it => {
+    if (it.type === "chestnut") {
+      drawChestnutBurr(it.x, it.y, it.radius, it.rot);
+    } else {
+      drawSongpyeon(it.x, it.y, it.radius, it.color, it.edgeColor, it.rot);
+    }
+  });
+
+  drawRabbit(player.x, player.y, player.width, player.height);
+
+  ctx.fillStyle = "#fef08a";
+  ctx.font = "20px 'Jua', sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(`점수  ${score}`, 18, 34);
+
+  ctx.textAlign = "center";
+  if (timeLeft <= 10) {
+    ctx.fillStyle = (Math.floor(frameCount / 15) % 2 === 0) ? "#f87171" : "#ffffff";
+  } else {
+    ctx.fillStyle = "#ffffff";
+  }
+  ctx.font = "21px 'Jua', sans-serif";
+  ctx.fillText(`⏱️ ${timeLeft}초`, canvas.width / 2, 34);
+
+  ctx.textAlign = "right";
+  let hearts = "";
+  for (let i = 0; i < 3; i++) {
+    hearts += i < lives ? "❤️" : "🤍";
+  }
+  ctx.font = "16px sans-serif";
+  ctx.fillText(hearts, canvas.width - 18, 34);
+
+  if (!isStarted) {
+    ctx.fillStyle = "rgba(10, 10, 25, 0.82)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#fde047";
+    ctx.font = "34px 'Jua', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("달토끼의 송편 모으기", canvas.width / 2, canvas.height / 2 - 85);
+
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "18px 'Jua', sans-serif";
+    ctx.fillText("화면을 손가락으로 밀어 토끼를 움직이세요!", canvas.width / 2, canvas.height / 2 - 40);
+
+    ctx.fillStyle = "#fca5a5";
+    ctx.font = "16px 'Jua', sans-serif";
+    ctx.fillText("⚠️ 밤송이는 피하고 송편만 담아요!", canvas.width / 2, canvas.height / 2 - 10);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(startBtn.x, startBtn.y, startBtn.width, startBtn.height, 26);
+    ctx.fillStyle = "#eab308";
+    ctx.shadowColor = "rgba(234, 179, 8, 0.45)";
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "#1e1b4b";
+    ctx.font = "22px 'Jua', sans-serif";
+    ctx.fillText("게임 시작", canvas.width / 2, startBtn.y + 34);
+    return;
+  }
+
+  if (gameOver) {
+    ctx.fillStyle = "rgba(10, 10, 25, 0.86)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#fde047";
+    ctx.font = "32px 'Jua', sans-serif";
+    ctx.textAlign = "center";
+    const titleText = gameOverReason === "time" ? "시간이 다 되었어요!" : "밤송이에 찔렸어요!";
+    ctx.fillText(titleText, canvas.width / 2, canvas.height / 2 - 45);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "23px 'Jua', sans-serif";
+    ctx.fillText(`수확한 송편 점수 : ${score}점`, canvas.width / 2, canvas.height / 2 + 5);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(restartBtn.x, restartBtn.y, restartBtn.width, restartBtn.height, 25);
+    ctx.fillStyle = "#eab308";
+    ctx.shadowColor = "rgba(234, 179, 8, 0.4)";
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "#1e1b4b";
+    ctx.font = "21px 'Jua', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("다시 도전하기", canvas.width / 2, restartBtn.y + 32);
+  }
+}
+
+function gameLoop() {
+  update();
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+document.fonts.ready.then(() => {
+  gameLoop();
+});
+</script>
+</body>
+</html>
