@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>♪달토끼의 파티 준비♪</title>
+  <title>달토끼의 파티 준비</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
@@ -13,6 +13,7 @@
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
+      box-sizing: border-box;
     }
     body {
       margin: 0;
@@ -104,7 +105,7 @@ const itemTypes = [
   { type: "white", score: 10, color: "#ffffff", edgeColor: "#e2e8f0", radius: 16, speed: 3.2 },
   { type: "pink",  score: 20, color: "#fbb6ce", edgeColor: "#f687b3", radius: 16, speed: 3.8 },
   { type: "green", score: 30, color: "#9ae6b4", edgeColor: "#48bb78", radius: 16, speed: 4.3 },
-  { type: "chestnut", score: 0, color: "#5c3a21", radius: 18, speed: 3.6 }
+  { type: "chestnut", score: 0, color: "#93633e", radius: 20, speed: 3.6 }
 ];
 
 const items = [];
@@ -279,37 +280,88 @@ function drawSongpyeon(x, y, radius, color, edgeColor, angle) {
   ctx.restore();
 }
 
+// 이미지 스타일을 반영한 촘촘한 가시 밤송이 그리기
 function drawChestnutBurr(x, y, radius, angle) {
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
 
-  const spikeCount = 14;
-  const outerR = radius + 6;
-  const innerR = radius - 2;
+  const numOuterSpikes = 32;
+  const outerR = radius;
+  const innerR = radius * 0.78;
 
-  ctx.fillStyle = "#4a2912";
+  // 1. 외곽 촘촘한 가시 지그재그 패스
   ctx.beginPath();
-  for (let i = 0; i < spikeCount * 2; i++) {
-    const r = (i % 2 === 0) ? outerR : innerR;
-    const a = (Math.PI * 2 / (spikeCount * 2)) * i;
-    const px = Math.cos(a) * r;
-    const py = Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
+  for (let i = 0; i < numOuterSpikes; i++) {
+    const aTip = (Math.PI * 2 / numOuterSpikes) * i;
+    const aBase = aTip + (Math.PI / numOuterSpikes);
+
+    const tipX = Math.cos(aTip) * outerR;
+    const tipY = Math.sin(aTip) * outerR;
+    const baseX = Math.cos(aBase) * innerR;
+    const baseY = Math.sin(aBase) * innerR;
+
+    if (i === 0) ctx.moveTo(tipX, tipY);
+    else ctx.lineTo(tipX, tipY);
+    ctx.lineTo(baseX, baseY);
   }
   ctx.closePath();
+
+  // 2. 따뜻한 황토빛 그라데이션 채우기
+  const burrGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, outerR);
+  burrGrad.addColorStop(0, "#d8a068");
+  burrGrad.addColorStop(0.55, "#b57743");
+  burrGrad.addColorStop(0.9, "#7a4220");
+  burrGrad.addColorStop(1, "#542b14");
+  ctx.fillStyle = burrGrad;
   ctx.fill();
 
-  ctx.fillStyle = "#78350f";
-  ctx.beginPath();
-  ctx.arc(0, 2, radius * 0.65, 0, Math.PI * 2);
-  ctx.fill();
+  // 외곽선 펜 드로잉 느낌
+  ctx.strokeStyle = "#46220e";
+  ctx.lineWidth = 1.2;
+  ctx.lineJoin = "round";
+  ctx.stroke();
 
-  ctx.fillStyle = "#d97706";
-  ctx.beginPath();
-  ctx.ellipse(0, 3, radius * 0.35, radius * 0.45, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // 3. 내부 방사형 가시들 렌더링 헬퍼
+  function drawInnerSpike(dist, a, length, width) {
+    const cx = Math.cos(a) * dist;
+    const cy = Math.sin(a) * dist;
+    const tx = Math.cos(a) * (dist + length);
+    const ty = Math.sin(a) * (dist + length);
+
+    const nx = -Math.sin(a) * (width / 2);
+    const ny = Math.cos(a) * (width / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(cx - nx, cy - ny);
+    ctx.lineTo(tx, ty);
+    ctx.lineTo(cx + nx, cy + ny);
+    ctx.closePath();
+
+    ctx.fillStyle = "#542b14";
+    ctx.fill();
+    ctx.strokeStyle = "#381907";
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+
+  // 외곽 쪽 내부 가시층 (20개)
+  for (let i = 0; i < 20; i++) {
+    const a = (Math.PI * 2 / 20) * i + 0.1;
+    drawInnerSpike(radius * 0.44, a, radius * 0.34, 3.2);
+  }
+
+  // 중간 쪽 내부 가시층 (14개)
+  for (let i = 0; i < 14; i++) {
+    const a = (Math.PI * 2 / 14) * i + 0.25;
+    drawInnerSpike(radius * 0.22, a, radius * 0.3, 2.8);
+  }
+
+  // 중심부 잔가시층 (8개)
+  for (let i = 0; i < 8; i++) {
+    const a = (Math.PI * 2 / 8) * i;
+    drawInnerSpike(radius * 0.05, a, radius * 0.24, 2.4);
+  }
 
   ctx.restore();
 }
@@ -487,11 +539,13 @@ function render() {
   drawRabbit(player.x, player.y, player.width, player.height);
 
   // 상단 HUD
+  ctx.textBaseline = "middle";
+  const hudY = 32;
+
   ctx.fillStyle = "#fef08a";
-  ctx.font = "20px 'Jua', sans-serif";
+  ctx.font = "19px 'Jua', sans-serif";
   ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText(`점수  ${score}`, 18, 34);
+  ctx.fillText(`점수  ${score}`, 24, hudY);
 
   ctx.textAlign = "center";
   if (timeLeft <= 10) {
@@ -499,18 +553,18 @@ function render() {
   } else {
     ctx.fillStyle = "#ffffff";
   }
-  ctx.font = "21px 'Jua', sans-serif";
-  ctx.fillText(`⏱️ ${timeLeft}초`, canvas.width / 2, 34);
+  ctx.font = "20px 'Jua', sans-serif";
+  ctx.fillText(`⏱️ ${timeLeft}초`, canvas.width / 2, hudY);
 
   ctx.textAlign = "right";
   let hearts = "";
   for (let i = 0; i < 3; i++) {
-    hearts += i < lives ? "❤️" : "🤍";
+    hearts += (i < lives ? "❤️" : "🤍") + (i < 2 ? " " : "");
   }
-  ctx.font = "16px sans-serif";
-  ctx.fillText(hearts, canvas.width - 18, 34);
+  ctx.font = "15px sans-serif";
+  ctx.fillText(hearts, canvas.width - 28, hudY);
 
-  // --- 1. 시작 대기 화면 (Start Screen) ---
+  // 1. 시작 대기 화면
   if (!isStarted) {
     ctx.fillStyle = "rgba(10, 10, 25, 0.84)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -519,24 +573,20 @@ function render() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    // 대제목 변경
     ctx.fillStyle = "#fde047";
     ctx.font = "34px 'Jua', sans-serif";
     ctx.fillText("달토끼의 파티 준비", canvas.width / 2, canvas.height / 2 - 80);
 
-    // 설명문
     ctx.fillStyle = "#e2e8f0";
     ctx.font = "18px 'Jua', sans-serif";
     ctx.fillText("화면을 손가락으로 밀어 토끼를 움직이세요!", canvas.width / 2, canvas.height / 2 - 35);
 
-    // 주의 문구 수정 및 정확한 중앙 정렬
     ctx.fillStyle = "#fca5a5";
     ctx.font = "17px 'Jua', sans-serif";
-    ctx.fillText("주의! 밤송이는 피하고 송편만 담아요!", canvas.width / 2, canvas.height / 2 - 2);
+    ctx.fillText("주의! 밤송이는 피하고 송편만 담아요", canvas.width / 2, canvas.height / 2 - 2);
 
     ctx.restore();
 
-    // [게임 시작] 버튼
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(startBtn.x, startBtn.y, startBtn.width, startBtn.height, 26);
@@ -557,7 +607,7 @@ function render() {
     return;
   }
 
-  // --- 2. 게임 오버 화면 ---
+  // 2. 게임 오버 화면
   if (gameOver) {
     ctx.fillStyle = "rgba(10, 10, 25, 0.86)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
