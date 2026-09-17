@@ -101,7 +101,7 @@
       to { transform: scale(1.1); background: #ffe3e3; }
     }
 
-    /* 피버 배너: 상단 UI 위치 이동에 맞춰 함께 하향 조정 */
+    /* 피버 배너 */
     #fever-banner {
       position: absolute;
       top: max(82px, calc(env(safe-area-inset-top, 0px) + 72px));
@@ -652,6 +652,7 @@ function drawNightSky(t) {
     ctx.restore();
   });
 
+  // 달 렌더링 (y축 위치: 약 110px, 반지름 48px -> 바닥 기준 약 170px)
   ctx.save();
   const moonX = width - 95;
   const moonY = 110;
@@ -723,7 +724,8 @@ function drawNightSky(t) {
 
   ctx.restore();
 
-  drawDetailedPineBranch(-15, -15, 1.25);
+  // 소나무 가지 위치: 달(y=110~170)보다 아래쪽(y=190)으로 배치
+  drawDetailedPineBranch(-20, 190, 1.18);
 
   ctx.fillStyle = '#425c27';
   ctx.fillRect(0, groundY, width, 68);
