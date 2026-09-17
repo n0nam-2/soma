@@ -282,7 +282,6 @@
         <input type="text" id="player-name" class="name-input" placeholder="이름 입력 (최대 6자)" maxlength="6">
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
-      <!-- 메인으로 / 다시하기 버튼 영역 -->
       <div style="margin-top: 12px; display: flex; justify-content: center; gap: 10px; padding: 0 10px;">
         <button class="btn-sub" id="main-btn" style="flex: 1; margin: 0;">🏠 메인으로</button>
         <button class="btn-sub" id="restart-btn" style="flex: 1; margin: 0;">다시하기</button>
@@ -424,10 +423,25 @@ const clouds = [
   { x: 350, y: 220, scale: 0.8, speed: 0.22 }
 ];
 
+// 꽃밭을 위한 꽃 데이터 생성
+const fieldFlowers = [];
+const flowerColors = ['#ff6e8a', '#ffa347', '#ffffff', '#ffb3c6', '#a26bb9', '#ffd700'];
+for(let i = 0; i < 35; i++) { 
+  fieldFlowers.push({
+    x: Math.random(), 
+    yOffset: Math.random() * 45 + 5, // y축 공간에 넓게 퍼지도록
+    color: flowerColors[Math.floor(Math.random() * flowerColors.length)],
+    scale: Math.random() * 0.5 + 0.6
+  });
+}
+// 겹침을 자연스럽게 하기 위해 뒤에 있는(y가 작은) 꽃부터 그리도록 정렬
+fieldFlowers.sort((a, b) => a.yOffset - b.yOffset);
+
 /* ==========================================================
-   3. 배경 렌더링 (밤하늘, 달, 산, 소나무, 지평선 나무)
+   3. 배경 렌더링 (밤하늘, 부드러운 산, 꽃밭)
    ========================================================== */
 function drawNightSky(t) {
+  // 밤하늘 배경
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
   skyGrad.addColorStop(0, '#152238');
   skyGrad.addColorStop(0.5, '#283b58');
@@ -438,6 +452,7 @@ function drawNightSky(t) {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, width, height);
 
+  // 별
   stars.forEach((s) => {
     const alpha = 0.35 + Math.abs(Math.sin(t * s.twinkleSpeed + s.twinkleOffset)) * 0.65;
     ctx.save();
@@ -452,6 +467,7 @@ function drawNightSky(t) {
     ctx.restore();
   });
 
+  // 달
   ctx.save();
   const moonX = width - 95;
   const moonY = 110;
@@ -476,6 +492,7 @@ function drawNightSky(t) {
   ctx.fill();
   ctx.restore();
 
+  // 구름
   clouds.forEach(c => {
     c.x += c.speed;
     if (c.x > width + 100) c.x = -120;
@@ -485,45 +502,60 @@ function drawNightSky(t) {
   const groundY = height - 68;
 
   ctx.save();
-  // 뒷배경 삼각형 산
-  ctx.fillStyle = 'rgba(60, 85, 130, 0.45)';
+
+  // 레퍼런스 스타일: 둥글고 부드러운 산 (안개/그라데이션 효과)
+  
+  // 산 Layer 1 (가장 뒤)
+  const grad1 = ctx.createLinearGradient(0, groundY - 240, 0, groundY - 100);
+  grad1.addColorStop(0, 'rgba(58, 84, 117, 0.9)'); 
+  grad1.addColorStop(1, 'rgba(82, 110, 145, 0.2)'); 
+  ctx.fillStyle = grad1;
   ctx.beginPath();
   ctx.moveTo(0, groundY);
-  ctx.lineTo(width * 0.15, groundY - 160);
-  ctx.lineTo(width * 0.45, groundY - 30);
-  ctx.lineTo(width * 0.75, groundY - 180);
-  ctx.lineTo(width + 20, groundY - 50);
+  ctx.lineTo(0, groundY - 130);
+  ctx.bezierCurveTo(width * 0.2, groundY - 120, width * 0.35, groundY - 240, width * 0.55, groundY - 180);
+  ctx.bezierCurveTo(width * 0.75, groundY - 120, width * 0.85, groundY - 190, width, groundY - 150);
   ctx.lineTo(width, groundY);
   ctx.fill();
 
-  // 앞배경 삼각형 산
-  ctx.fillStyle = 'rgba(35, 55, 90, 0.6)';
+  // 산 Layer 2 (중간)
+  const grad2 = ctx.createLinearGradient(0, groundY - 220, 0, groundY - 80);
+  grad2.addColorStop(0, 'rgba(45, 69, 99, 0.95)');
+  grad2.addColorStop(1, 'rgba(55, 83, 117, 0.3)');
+  ctx.fillStyle = grad2;
   ctx.beginPath();
-  ctx.moveTo(-20, groundY);
-  ctx.lineTo(width * 0.3, groundY - 120);
-  ctx.lineTo(width * 0.6, groundY - 40);
-  ctx.lineTo(width * 0.9, groundY - 130);
-  ctx.lineTo(width + 30, groundY);
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(0, groundY - 180);
+  ctx.bezierCurveTo(width * 0.3, groundY - 220, width * 0.5, groundY - 80, width * 0.75, groundY - 130);
+  ctx.bezierCurveTo(width * 0.9, groundY - 160, width, groundY - 140, width, groundY - 110);
   ctx.lineTo(width, groundY);
   ctx.fill();
+
+  // 산 Layer 3 (가장 앞)
+  const grad3 = ctx.createLinearGradient(0, groundY - 180, 0, groundY - 50);
+  grad3.addColorStop(0, 'rgba(31, 52, 80, 1)');
+  grad3.addColorStop(1, 'rgba(38, 62, 92, 0.5)');
+  ctx.fillStyle = grad3;
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(0, groundY - 80);
+  ctx.bezierCurveTo(width * 0.2, groundY - 60, width * 0.4, groundY - 180, width * 0.75, groundY - 60);
+  ctx.bezierCurveTo(width * 0.85, groundY - 20, width, groundY - 60, width, groundY - 80);
+  ctx.lineTo(width, groundY);
+  ctx.fill();
+
   ctx.restore();
 
-  drawPineTree(0, 0, 1, false);
-  drawPineTree(90, 30, 0.65, false);
-
-  ctx.fillStyle = '#d5af72';
+  // 바닥 면 렌더링
+  ctx.fillStyle = '#425c27'; // 밤의 풀밭 색상
   ctx.fillRect(0, groundY, width, 68);
-  ctx.fillStyle = '#b38f56';
-  ctx.fillRect(0, groundY, width, 6);
+  ctx.fillStyle = '#2d4219';
+  ctx.fillRect(0, groundY, width, 6); // 바닥 경계선
 
-  // 지평선 위의 작은 나무들
-  drawSmallTree(width * 0.25, groundY, 0.8);
-  drawSmallTree(width * 0.65, groundY, 0.95);
-  drawSmallTree(width * 0.85, groundY, 0.7);
-
-  drawFlower(35, groundY - 2, '#ff6e8a');
-  drawFlower(width - 55, groundY - 3, '#ffa347');
-  drawFlower(width - 95, groundY + 10, '#ffffff');
+  // 꽃밭 그리기 (미리 생성해둔 fieldFlowers 데이터를 기반으로 배치)
+  fieldFlowers.forEach(f => {
+    drawFlower(width * f.x, groundY + f.yOffset, f.color, f.scale);
+  });
 
   if (feverTransition > 0) {
     ctx.save();
@@ -550,83 +582,30 @@ function drawCloud(cx, cy, s) {
   ctx.restore();
 }
 
-function drawPineTree(tx = 0, ty = 0, scale = 1, flip = false) {
+function drawFlower(fx, fy, color, scale = 1) {
   ctx.save();
-  ctx.translate(tx, ty);
-  ctx.scale(flip ? -scale : scale, scale);
-  
-  ctx.strokeStyle = '#422c1e';
-  ctx.lineWidth = 14;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(0, 10);
-  ctx.quadraticCurveTo(80, 20, 110, 60);
-  ctx.stroke();
-  
-  ctx.lineWidth = 8;
-  ctx.beginPath();
-  ctx.moveTo(40, 20);
-  ctx.quadraticCurveTo(90, 80, 70, 110);
-  ctx.stroke();
-
-  drawPineNeedles(30, -10, 45);
-  drawPineNeedles(90, 30, 35);
-  drawPineNeedles(120, 65, 30);
-  drawPineNeedles(60, 105, 35);
-  drawPineNeedles(0, 60, 40);
-  ctx.restore();
-}
-
-function drawPineNeedles(x, y, radius) {
-  ctx.fillStyle = '#1e3822'; 
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.arc(x - radius*0.6, y + radius*0.5, radius*0.8, 0, Math.PI * 2);
-  ctx.arc(x + radius*0.6, y + radius*0.5, radius*0.8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#2a5231';
-  ctx.beginPath();
-  ctx.arc(x, y - radius*0.2, radius*0.75, 0, Math.PI*2);
-  ctx.fill();
-}
-
-// 지평선 위 작은 나무 그리기 함수 추가
-function drawSmallTree(tx, ty, scale) {
-  ctx.save();
-  ctx.translate(tx, ty);
+  ctx.translate(fx, fy);
   ctx.scale(scale, scale);
   
-  // 나무 기둥
-  ctx.fillStyle = '#4a2f22';
-  ctx.fillRect(-3, -20, 6, 20);
+  // 꽃대
+  ctx.fillStyle = '#3a611c';
+  ctx.fillRect(-1.5, 0, 3, 14);
   
-  // 나무 잎 (둥근 스타일)
-  ctx.fillStyle = '#3a662e';
-  ctx.beginPath();
-  ctx.arc(0, -25, 12, 0, Math.PI * 2);
-  ctx.arc(-9, -17, 10, 0, Math.PI * 2);
-  ctx.arc(9, -17, 10, 0, Math.PI * 2);
-  ctx.arc(0, -35, 11, 0, Math.PI * 2);
-  ctx.fill();
-  
-  ctx.restore();
-}
-
-function drawFlower(fx, fy, color) {
-  ctx.save();
-  ctx.fillStyle = '#4c7827';
-  ctx.fillRect(fx - 1, fy, 3, 10);
+  // 꽃잎
   ctx.fillStyle = color;
   for (let i = 0; i < 5; i++) {
     const ang = (i * Math.PI * 2) / 5;
     ctx.beginPath();
-    ctx.arc(fx + Math.cos(ang) * 5, fy + Math.sin(ang) * 5, 4, 0, Math.PI * 2);
+    ctx.arc(Math.cos(ang) * 5, Math.sin(ang) * 5, 4.5, 0, Math.PI * 2);
     ctx.fill();
   }
+  
+  // 꽃술 (중앙)
   ctx.fillStyle = '#ffdf40';
   ctx.beginPath();
-  ctx.arc(fx, fy, 3, 0, Math.PI * 2);
+  ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
   ctx.fill();
+  
   ctx.restore();
 }
 
