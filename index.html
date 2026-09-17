@@ -282,7 +282,7 @@
         <input type="text" id="player-name" class="name-input" placeholder="이름 입력 (최대 6자)" maxlength="6">
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
-      <!-- 메인으로 / 다시하기 버튼 영역 수정 -->
+      <!-- 메인으로 / 다시하기 버튼 영역 -->
       <div style="margin-top: 12px; display: flex; justify-content: center; gap: 10px; padding: 0 10px;">
         <button class="btn-sub" id="main-btn" style="flex: 1; margin: 0;">🏠 메인으로</button>
         <button class="btn-sub" id="restart-btn" style="flex: 1; margin: 0;">다시하기</button>
@@ -425,7 +425,7 @@ const clouds = [
 ];
 
 /* ==========================================================
-   3. 배경 렌더링 (밤하늘, 달, 산, 소나무)
+   3. 배경 렌더링 (밤하늘, 달, 산, 소나무, 지평선 나무)
    ========================================================== */
 function drawNightSky(t) {
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
@@ -485,19 +485,25 @@ function drawNightSky(t) {
   const groundY = height - 68;
 
   ctx.save();
+  // 뒷배경 삼각형 산
   ctx.fillStyle = 'rgba(60, 85, 130, 0.45)';
   ctx.beginPath();
   ctx.moveTo(0, groundY);
-  ctx.lineTo(0, groundY - 130);
-  ctx.bezierCurveTo(width * 0.3, groundY - 190, width * 0.6, groundY - 90, width, groundY - 150);
+  ctx.lineTo(width * 0.15, groundY - 160);
+  ctx.lineTo(width * 0.45, groundY - 30);
+  ctx.lineTo(width * 0.75, groundY - 180);
+  ctx.lineTo(width + 20, groundY - 50);
   ctx.lineTo(width, groundY);
   ctx.fill();
 
+  // 앞배경 삼각형 산
   ctx.fillStyle = 'rgba(35, 55, 90, 0.6)';
   ctx.beginPath();
-  ctx.moveTo(0, groundY);
-  ctx.lineTo(0, groundY - 80);
-  ctx.bezierCurveTo(width * 0.4, groundY - 120, width * 0.7, groundY - 50, width, groundY - 100);
+  ctx.moveTo(-20, groundY);
+  ctx.lineTo(width * 0.3, groundY - 120);
+  ctx.lineTo(width * 0.6, groundY - 40);
+  ctx.lineTo(width * 0.9, groundY - 130);
+  ctx.lineTo(width + 30, groundY);
   ctx.lineTo(width, groundY);
   ctx.fill();
   ctx.restore();
@@ -509,6 +515,11 @@ function drawNightSky(t) {
   ctx.fillRect(0, groundY, width, 68);
   ctx.fillStyle = '#b38f56';
   ctx.fillRect(0, groundY, width, 6);
+
+  // 지평선 위의 작은 나무들
+  drawSmallTree(width * 0.25, groundY, 0.8);
+  drawSmallTree(width * 0.65, groundY, 0.95);
+  drawSmallTree(width * 0.85, groundY, 0.7);
 
   drawFlower(35, groundY - 2, '#ff6e8a');
   drawFlower(width - 55, groundY - 3, '#ffa347');
@@ -579,6 +590,28 @@ function drawPineNeedles(x, y, radius) {
   ctx.fill();
 }
 
+// 지평선 위 작은 나무 그리기 함수 추가
+function drawSmallTree(tx, ty, scale) {
+  ctx.save();
+  ctx.translate(tx, ty);
+  ctx.scale(scale, scale);
+  
+  // 나무 기둥
+  ctx.fillStyle = '#4a2f22';
+  ctx.fillRect(-3, -20, 6, 20);
+  
+  // 나무 잎 (둥근 스타일)
+  ctx.fillStyle = '#3a662e';
+  ctx.beginPath();
+  ctx.arc(0, -25, 12, 0, Math.PI * 2);
+  ctx.arc(-9, -17, 10, 0, Math.PI * 2);
+  ctx.arc(9, -17, 10, 0, Math.PI * 2);
+  ctx.arc(0, -35, 11, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
 function drawFlower(fx, fy, color) {
   ctx.save();
   ctx.fillStyle = '#4c7827';
@@ -602,7 +635,7 @@ function drawFlower(fx, fy, color) {
    ========================================================== */
 const rices = [];
 const particles = [];
-const redStars = []; // 불꽃(Ember)을 대체하는 붉은 별빛 배열
+const redStars = []; 
 
 function spawnRice() {
   const isBad = Math.random() < 0.28;
@@ -618,14 +651,13 @@ function spawnRice() {
   });
 }
 
-// 붉은 별빛 생성 함수
 function spawnRedStar() {
   redStars.push({
     x: Math.random() * width,
     y: -10,
     speedY: Math.random() * 2 + 3.5,
     size: Math.random() * 4 + 4, 
-    color: '#ff4d66', // 붉은 별빛 색상
+    color: '#ff4d66', 
     offset: Math.random() * 100
   });
 }
@@ -895,7 +927,6 @@ function gameLoop(timestamp) {
       lastSpawn = timestamp;
     }
 
-    // 붉은 별빛(redStars) 이동 및 렌더링
     for (let i = redStars.length - 1; i >= 0; i--) {
       const s = redStars[i];
       s.y += s.speedY;
@@ -907,7 +938,6 @@ function gameLoop(timestamp) {
       ctx.shadowColor = s.color;
       ctx.shadowBlur = 12;
       
-      // 4방향 다이아몬드(별) 모양 그리기
       ctx.beginPath();
       ctx.moveTo(s.x, s.y - s.size);
       ctx.quadraticCurveTo(s.x, s.y, s.x + s.size, s.y);
@@ -916,7 +946,6 @@ function gameLoop(timestamp) {
       ctx.quadraticCurveTo(s.x, s.y, s.x, s.y - s.size);
       ctx.fill();
 
-      // 밝은 코어 추가
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(s.x, s.y, s.size * 0.25, 0, Math.PI * 2);
@@ -994,7 +1023,7 @@ function startGame() {
   feverTransition = 0;
   rices.length = 0;
   particles.length = 0;
-  redStars.length = 0; // 초기화
+  redStars.length = 0; 
   rabbit.x = width / 2;
   rabbit.targetX = width / 2;
   rabbit.eatTimer = 0;
@@ -1039,7 +1068,7 @@ function goToMain() {
   score = 0;
   rices.length = 0;
   particles.length = 0;
-  redStars.length = 0; // 초기화
+  redStars.length = 0; 
   rabbit.x = width / 2;
   rabbit.targetX = width / 2;
   rabbit.eatTimer = 0;
