@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>달토끼 송편 잡기</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
@@ -275,7 +274,7 @@
 
   <!-- 게임 오버 -->
   <div class="modal-overlay" id="gameover-modal" style="display: none;">
-    <div class="dialog-box" id="capture-area">
+    <div class="dialog-box">
       <div style="font-size:1.75rem; color:#f05255; margin-bottom:8px;">★ GAME OVER ★</div>
       <p style="color:#6d482f; font-size:1rem;">YOUR SCORE</p>
       <div style="font-size: 3.2rem; color:#4a2810; margin: 2px 0;" id="final-score">0</div>
@@ -284,7 +283,7 @@
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
       <div style="margin-top:8px;">
-        <button class="btn-sub" id="download-card-btn">💾 점수 이미지 저장</button>
+        <button class="btn-sub" id="main-btn">🏠 메인으로</button>
         <button class="btn-sub" id="restart-btn">다시하기</button>
       </div>
     </div>
@@ -602,7 +601,7 @@ function drawFlower(fx, fy, color) {
    ========================================================== */
 const rices = [];
 const particles = [];
-const embers = []; // 피버 타임 불씨 애니메이션용 배열
+const embers = []; 
 
 function spawnRice() {
   const isBad = Math.random() < 0.28;
@@ -624,8 +623,8 @@ function spawnEmber() {
     y: -10,
     speedY: Math.random() * 2 + 4,
     size: Math.random() * 3 + 2,
-    color: Math.random() > 0.5 ? '#ffae00' : '#ff4d00', // 노란빛 또는 붉은빛
-    offset: Math.random() * 100 // 일렁임 타이밍 차이를 위한 오프셋
+    color: Math.random() > 0.5 ? '#ffae00' : '#ff4d00',
+    offset: Math.random() * 100
   });
 }
 
@@ -875,7 +874,6 @@ function gameLoop(timestamp) {
   if (gameState === 'PLAYING') {
     if (fever) {
       feverTransition = Math.min(1, feverTransition + 0.015);
-      // 피버 타임일 때 작은 불씨들 무작위 생성 (점수에 영향 없음)
       if (Math.random() < 0.35) {
         spawnEmber();
       }
@@ -895,15 +893,12 @@ function gameLoop(timestamp) {
       lastSpawn = timestamp;
     }
 
-    // 불씨 렌더링 (배경 이펙트 역할)
     for (let i = embers.length - 1; i >= 0; i--) {
       const e = embers[i];
       e.y += e.speedY;
-      // 좌우로 부드럽게 일렁이도록 x 좌표 변경
       e.x += Math.sin(timestamp * 0.003 + e.offset) * 1.5;
 
       ctx.save();
-      // 깜빡이는 효과
       ctx.globalAlpha = 0.4 + Math.abs(Math.sin(timestamp * 0.005 + e.offset)) * 0.6;
       ctx.fillStyle = e.color;
       ctx.shadowColor = e.color;
@@ -916,7 +911,6 @@ function gameLoop(timestamp) {
       if (e.y > height + 20) embers.splice(i, 1);
     }
 
-    // 송편 렌더링 및 충돌 판정
     for (let i = rices.length - 1; i >= 0; i--) {
       const r = rices[i];
       r.y += r.speed;
@@ -946,7 +940,6 @@ function gameLoop(timestamp) {
       if (r.y > height + 40) rices.splice(i, 1);
     }
 
-    // 파티클(점수 텍스트) 렌더링
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.y += p.vy;
@@ -986,7 +979,7 @@ function startGame() {
   feverTransition = 0;
   rices.length = 0;
   particles.length = 0;
-  embers.length = 0; // 시작 시 불씨 배열 초기화
+  embers.length = 0; 
   rabbit.x = width / 2;
   rabbit.targetX = width / 2;
   rabbit.eatTimer = 0;
@@ -1024,6 +1017,25 @@ function endGame() {
   document.getElementById('gameover-modal').style.display = 'flex';
 }
 
+function goToMain() {
+  gameState = 'START';
+  fever = false;
+  feverTransition = 0;
+  score = 0;
+  rices.length = 0;
+  particles.length = 0;
+  embers.length = 0;
+  rabbit.x = width / 2;
+  rabbit.targetX = width / 2;
+  rabbit.eatTimer = 0;
+  rabbit.eatType = 'none';
+
+  document.getElementById('gameover-modal').style.display = 'none';
+  document.getElementById('top-ui').style.display = 'none';
+  document.getElementById('fever-banner').style.display = 'none';
+  document.getElementById('start-modal').style.display = 'flex';
+}
+
 function getRankings() {
   return JSON.parse(localStorage.getItem('rabbit_rankings_v5') || '[]');
 }
@@ -1056,6 +1068,7 @@ function renderRankingTable() {
 
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
+document.getElementById('main-btn').addEventListener('click', goToMain);
 
 document.getElementById('open-rank-btn').addEventListener('click', () => {
   renderRankingTable();
@@ -1073,16 +1086,6 @@ document.getElementById('save-score-btn').addEventListener('click', () => {
   renderRankingTable();
   document.getElementById('gameover-modal').style.display = 'none';
   document.getElementById('ranking-modal').style.display = 'flex';
-});
-
-document.getElementById('download-card-btn').addEventListener('click', () => {
-  const captureArea = document.getElementById('capture-area');
-  html2canvas(captureArea, { backgroundColor: null }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `달토끼_송편기록_${score}점.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  });
 });
 </script>
 </body>
