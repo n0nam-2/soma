@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>달토끼 송편 잡기</title>
   
-  <!-- Firebase SDK 추가 (호환성 버전) -->
+  <!-- Firebase SDK 추가 (호환성 버전) - Realtime Database로 변경 -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
@@ -314,7 +314,7 @@
 
 <script>
 /* ==========================================================
-   0. Firebase 초기화 및 연동 (사용자 설정 적용 완료)
+   0. Firebase 초기화 및 연동
    ========================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyDUu0cuuZYcZrMVsMbLrtBkVwqyFu5ewnk",
@@ -327,9 +327,9 @@ const firebaseConfig = {
   measurementId: "G-Z4W6KJGNDL"
 };
 
-// Firebase 초기화
+// Firebase 초기화 (Realtime Database 사용)
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db = firebase.database();
 
 
 /* ==========================================================
@@ -1055,7 +1055,7 @@ function gameLoop(timestamp) {
 requestAnimationFrame(gameLoop);
 
 /* ==========================================================
-   7. 게임 제어 및 Firebase 랭킹 연동
+   7. 게임 제어 및 Firebase 랭킹 연동 (Realtime Database 버전)
    ========================================================== */
 function startGame() {
   initAudio();
@@ -1123,13 +1123,14 @@ function goToMain() {
   document.getElementById('start-modal').style.display = 'flex';
 }
 
-// 랭킹 저장 (Firebase Firestore 연동)
+// 랭킹 저장 (Realtime Database 연동)
 async function saveRanking(name, score) {
   try {
-    await db.collection('rankings').add({
+    const rankRef = db.ref('rankings').push();
+    await rankRef.set({
       name: name || '달토끼',
       score: score,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: firebase.database.ServerValue.TIMESTAMP
     });
   } catch (error) {
     console.error("Error adding document: ", error);
@@ -1137,35 +1138,41 @@ async function saveRanking(name, score) {
   }
 }
 
-// 랭킹 조회 및 표 생성 (Firebase Firestore 연동 - 10명 제한)
+// 랭킹 조회 및 표 생성 (Realtime Database 연동 - 상위 10명 제한)
 async function renderRankingTable() {
   const listEl = document.getElementById('ranking-list');
   listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">데이터를 불러오는 중...</div>';
   
   try {
-    const snapshot = await db.collection('rankings')
-      .orderBy('score', 'desc')
-      .limit(10)
-      .get();
+    // Realtime Database는 오름차순 조회를 기본으로 하므로 점수로 가져온 뒤 역순 정렬합니다.
+    const snapshot = await db.ref('rankings')
+      .orderByChild('score')
+      .limitToLast(10)
+      .once('value');
       
     listEl.innerHTML = '';
     
-    if (snapshot.empty) {
+    if (!snapshot.exists()) {
       listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">아직 등록된 기록이 없습니다!</div>';
       return;
     }
     
-    let idx = 1;
-    snapshot.forEach(doc => {
-      const r = doc.data();
+    const ranks = [];
+    snapshot.forEach(childSnapshot => {
+      ranks.push(childSnapshot.val());
+    });
+    
+    // 배열을 내림차순(높은 점수 우선)으로 정렬
+    ranks.sort((a, b) => b.score - a.score);
+    
+    ranks.forEach((r, idx) => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <span class="rank-num">${idx}위</span>
+        <span class="rank-num">${idx + 1}위</span>
         <span class="rank-name">${r.name}</span>
         <span class="rank-pts">${r.score}점</span>
       `;
       listEl.appendChild(row);
-      idx++;
     });
   } catch (error) {
     console.error("Error fetching rankings: ", error);
@@ -1190,7 +1197,6 @@ document.getElementById('close-rank-btn').addEventListener('click', () => {
   document.getElementById('ranking-modal').style.display = 'none';
 });
 
-// 비동기 처리 적용된 스코어 저장 버튼 핸들러
 document.getElementById('save-score-btn').addEventListener('click', async () => {
   const nameInput = document.getElementById('player-name');
   const name = nameInput.value.trim();
@@ -1203,7 +1209,7 @@ document.getElementById('save-score-btn').addEventListener('click', async () => 
   
   btn.disabled = false;
   btn.innerText = '등록하기';
-  nameInput.value = ''; // 입력창 초기화
+  nameInput.value = ''; 
   
   alert('랭킹에 등록되었습니다!');
   await renderRankingTable();
