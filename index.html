@@ -140,7 +140,6 @@
       align-items: center;
     }
 
-    /* 시작 화면: 전체 UI를 화면 정중앙에 여백 없이 밀착 배치 */
     #start-modal {
       background: rgba(10, 15, 28, 0.25);
       justify-content: center;
@@ -166,7 +165,7 @@
     }
 
     /* ==========================================================
-       타이틀 및 송편 점수 안내 카드
+       타이틀 및 점수 안내 카드
        ========================================================== */
     .title-badge-container {
       width: 100%;
@@ -250,6 +249,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 0 10px;
       transition: transform 0.08s ease, box-shadow 0.08s ease;
       -webkit-tap-highlight-color: transparent;
     }
@@ -263,36 +263,18 @@
         0 4px 8px rgba(0, 0, 0, 0.25);
     }
 
-    .btn-start-content {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      font-size: 1.9rem;
-      color: #ffffff;
-      letter-spacing: 2px;
-      text-shadow: 
-        -2.5px -2.5px 0 #4a1923,
-         2.5px -2.5px 0 #4a1923,
-        -2.5px  2.5px 0 #4a1923,
-         2.5px  2.5px 0 #4a1923,
-         0px    3.5px 0 #4a1923;
-    }
-
-    .btn-start-flower {
-      font-size: 1.35rem;
-      color: #fff2f6;
-      text-shadow: 
-        -2px -2px 0 #4a1923,
-         2px -2px 0 #4a1923,
-        -2px  2px 0 #4a1923,
-         2px  2px 0 #4a1923;
+    .btn-start-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+      pointer-events: none;
     }
 
     /* 랭킹보기 버튼 (중앙 정렬) */
     .btn-pill-sub {
       height: 44px;
-      padding: 0 24px;
+      padding: 0 22px;
       border-radius: 9999px;
       background: #ffffff;
       border: 3px solid #5a371e;
@@ -300,7 +282,7 @@
       display: inline-flex;
       justify-content: center;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       font-size: 1.05rem;
       color: #4a2810;
       font-weight: bold;
@@ -314,6 +296,15 @@
     .btn-pill-sub:active {
       transform: translateY(3px);
       box-shadow: 0 1px 0 #44240f;
+    }
+
+    /* 일러스트 왕관 아이콘 */
+    .crown-icon {
+      width: 24px;
+      height: 20px;
+      display: inline-block;
+      vertical-align: middle;
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
     }
 
     /* 모달 버튼 */
@@ -485,7 +476,7 @@
         </g>
         <path d="M 265 60 C 275 52, 285 62, 275 70 C 265 68, 260 62, 265 60 Z" fill="#8ec354" stroke="#3e1e10" stroke-width="2"/>
 
-        <!-- 1행 타이틀: 달토끼 (구름 내부 정중앙 균형 배치) -->
+        <!-- 1행 타이틀: 달토끼 -->
         <text x="170" y="94" text-anchor="middle" font-family="'Jua', sans-serif" font-size="46" font-weight="900"
               fill="url(#yellowGrad)" stroke="#3e1e10" stroke-width="7.5" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="2">달토끼</text>
 
@@ -495,7 +486,7 @@
           <ellipse cx="-4" cy="-1" rx="6" ry="3" fill="rgba(255,255,255,0.9)" transform="rotate(-15)"/>
         </g>
 
-        <!-- 2행 타이틀: 송편잡기 (구름 내부 정중앙 균형 배치) -->
+        <!-- 2행 타이틀: 송편잡기 -->
         <text x="170" y="142" text-anchor="middle" font-family="'Jua', sans-serif" font-size="40" font-weight="900"
               fill="url(#pinkGrad)" stroke="#3e1e10" stroke-width="7.5" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="1">송편잡기</text>
 
@@ -508,7 +499,7 @@
 
       <!-- 점수 안내 박스 -->
       <div class="guide-card">
-        <div class="guide-card-title">토끼에게 맛있는 꿀송편을 먹여 주세요!</div>
+        <div class="guide-card-title">토끼에게 맛있는 송편을 먹여 주세요!</div>
         <div class="rice-guide-row">
           <span class="mini-rice-icon icon-white"></span>
           <span style="color:#c9325e; font-weight:bold;">+10점</span>
@@ -524,16 +515,70 @@
 
     <!-- 하단 버튼 영역 -->
     <div class="bottom-action-container">
+      <!-- START 버튼 -->
       <button class="btn-start" id="start-btn">
-        <div class="btn-start-content">
-          <span class="btn-start-flower">✿</span>
-          <span>START</span>
-          <span class="btn-start-flower">✿</span>
-        </div>
+        <svg class="btn-start-svg" viewBox="0 0 240 50" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="btnTextShadow" x="-20%" y="-20%" width="140%" height="150%">
+              <feDropShadow dx="0" dy="3.5" stdDeviation="0" flood-color="#4a1923"/>
+            </filter>
+          </defs>
+
+          <!-- 좌측 벚꽃 -->
+          <g transform="translate(34, 24)" filter="url(#btnTextShadow)">
+            <circle cx="0" cy="-5.5" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="5.2" cy="-1.7" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="3.2" cy="4.5" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="-3.2" cy="4.5" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="-5.2" cy="-1.7" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="0" cy="0" r="3.2" fill="#ff99b3"/>
+          </g>
+
+          <!-- START 텍스트 -->
+          <g filter="url(#btnTextShadow)">
+            <text x="120" y="34.5" text-anchor="middle" font-family="'Jua', sans-serif" font-size="31" font-weight="900"
+                  fill="#ffffff" stroke="#4a1923" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"
+                  paint-order="stroke fill" letter-spacing="2.5">START</text>
+          </g>
+
+          <!-- 우측 벚꽃 -->
+          <g transform="translate(206, 24)" filter="url(#btnTextShadow)">
+            <circle cx="0" cy="-5.5" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="5.2" cy="-1.7" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="3.2" cy="4.5" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="-3.2" cy="4.5" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="-5.2" cy="-1.7" r="4.8" fill="#fff2f6" stroke="#4a1923" stroke-width="2.4"/>
+            <circle cx="0" cy="0" r="3.2" fill="#ff99b3"/>
+          </g>
+        </svg>
       </button>
 
+      <!-- 랭킹보기 버튼 (일러스트 왕관 SVG 합성) -->
       <button class="btn-pill-sub" id="open-rank-btn">
-        <span style="font-size:1.2rem;">👑</span>
+        <svg class="crown-icon" viewBox="0 0 28 24" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="crownGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fff885"/>
+              <stop offset="45%" stop-color="#ffd534"/>
+              <stop offset="100%" stop-color="#f59e0b"/>
+            </linearGradient>
+          </defs>
+          <!-- 왕관 바디 -->
+          <path d="M 5 19.5 L 3 9.5 L 9 13.8 L 14 6 L 19 13.8 L 25 9.5 L 23 19.5 Z"
+                fill="url(#crownGrad)"
+                stroke="#4a2810"
+                stroke-width="2.5"
+                stroke-linejoin="round"
+                stroke-linecap="round"/>
+          <!-- 왕관 밑단 라인 장식 -->
+          <path d="M 5.8 17 L 22.2 17" stroke="#d97706" stroke-width="2" stroke-linecap="round"/>
+          <!-- 3개 꼭짓점 구슬 장식 -->
+          <circle cx="3" cy="9.2" r="1.6" fill="#fff885" stroke="#4a2810" stroke-width="1.6"/>
+          <circle cx="14" cy="5.8" r="2" fill="#fff885" stroke="#4a2810" stroke-width="1.6"/>
+          <circle cx="25" cy="9.2" r="1.6" fill="#fff885" stroke="#4a2810" stroke-width="1.6"/>
+          <!-- 중앙 하이라이트 -->
+          <circle cx="14" cy="11.8" r="1.5" fill="#ffffff" opacity="0.9"/>
+        </svg>
         <span>랭킹보기</span>
       </button>
     </div>
@@ -777,7 +822,7 @@ function playSound(type) {
 }
 
 /* ==========================================================
-   2. 캔버스 및 게임 변수 설정 (원본 보존)
+   2. 캔버스 및 게임 변수 설정
    ========================================================== */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -855,7 +900,7 @@ for(let i = 0; i < 35; i++) {
 fieldFlowers.sort((a, b) => a.yOffset - b.yOffset);
 
 /* ==========================================================
-   3. 배경 렌더링 (원본 보존)
+   3. 배경 렌더링
    ========================================================== */
 function drawNightSky(t) {
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
@@ -1063,7 +1108,7 @@ function drawFlower(fx, fy, color, scale = 1) {
 }
 
 /* ==========================================================
-   4. 송편 오브젝트 렌더링 (원본 보존)
+   4. 송편 오브젝트 렌더링
    ========================================================== */
 const rices = [];
 const particles = [];
@@ -1153,7 +1198,7 @@ function drawSongpyeon(r) {
 }
 
 /* ==========================================================
-   5. 토끼 캐릭터 렌더링 (원본 보존)
+   5. 토끼 캐릭터 렌더링
    ========================================================== */
 function drawPlayer(x, y) {
   ctx.save();
