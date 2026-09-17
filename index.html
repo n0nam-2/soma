@@ -263,6 +263,7 @@
         </div>
         <div class="rice-guide-row">
           <span class="mini-rice-icon icon-purple"></span>
+          <!-- 팥송편 -> 콩송편 변경 -->
           <span style="color:#6d3596; font-weight:bold;">콩송편: -10점</span>
         </div>
       </div>
@@ -383,6 +384,7 @@ let score = 0;
 let timeLeft = 60;
 let timerInterval = null;
 let fever = false;
+let feverTransition = 0; // Fade 효과를 위한 변수
 
 // 토끼 변수
 const rabbit = {
@@ -428,7 +430,7 @@ const clouds = [
    3. 배경 렌더링 (밤하늘, 달, 소나무)
    ========================================================== */
 function drawNightSky(t) {
-  // 평소 배경 하늘색 항상 유지
+  // 1. 기본 밤하늘 (평소 배경 하늘색 항상 유지)
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
   skyGrad.addColorStop(0, '#152238');
   skyGrad.addColorStop(0.5, '#283b58');
@@ -439,7 +441,7 @@ function drawNightSky(t) {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // 별 항상 유지
+  // 2. 별
   stars.forEach((s) => {
     const alpha = 0.35 + Math.abs(Math.sin(t * s.twinkleSpeed + s.twinkleOffset)) * 0.65;
     ctx.save();
@@ -454,7 +456,7 @@ function drawNightSky(t) {
     ctx.restore();
   });
 
-  // 달 항상 유지
+  // 3. 달 항상 표시
   ctx.save();
   const moonX = width - 95;
   const moonY = 110;
@@ -479,17 +481,19 @@ function drawNightSky(t) {
   ctx.fill();
   ctx.restore();
 
-  // 구름 항상 유지
+  // 4. 구름
   clouds.forEach(c => {
     c.x += c.speed;
     if (c.x > width + 100) c.x = -120;
     drawCloud(c.x, c.y, c.scale);
   });
 
-  // 소나무 항상 유지
-  drawPineTree();
+  // 5. 나무 배치 (3그루)
+  drawPineTree(0, 0, 1, false);             // 좌측 원본
+  drawPineTree(90, 30, 0.65, false);        // 좌측 약간 뒤
+  drawPineTree(width + 20, 10, 0.85, true); // 우측 (좌우반전)
 
-  // 땅 항상 유지
+  // 6. 땅
   const groundY = height - 68;
   ctx.fillStyle = '#d5af72';
   ctx.fillRect(0, groundY, width, 68);
@@ -500,14 +504,15 @@ function drawNightSky(t) {
   drawFlower(width - 55, groundY - 3, '#ffa347');
   drawFlower(width - 95, groundY + 10, '#ffffff');
 
-  // ⭐ 피버 타임일 때 기존 배경 위에 투명도 있는 붉은 그라데이션 오버레이 추가
-  if (fever) {
+  // ⭐ 7. 피버 타임 붉은 그라데이션 오버레이 (Fade In)
+  if (feverTransition > 0) {
     ctx.save();
     const overlayGrad = ctx.createLinearGradient(0, 0, 0, height);
-    // 투명도를 낮춰서(0.25~0.35) 뒷 배경이 보이게 처리
-    overlayGrad.addColorStop(0, 'rgba(200, 20, 50, 0.35)');
-    overlayGrad.addColorStop(0.5, 'rgba(220, 50, 80, 0.25)');
-    overlayGrad.addColorStop(1, 'rgba(255, 100, 120, 0.35)');
+    // feverTransition 값에 따라 투명도가 서서히 증가하여 자연스럽게 물듦
+    overlayGrad.addColorStop(0, `rgba(200, 20, 50, ${0.45 * feverTransition})`);
+    overlayGrad.addColorStop(0.5, `rgba(220, 50, 80, ${0.35 * feverTransition})`);
+    overlayGrad.addColorStop(1, `rgba(255, 100, 120, ${0.45 * feverTransition})`);
+    
     ctx.fillStyle = overlayGrad;
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
@@ -526,8 +531,12 @@ function drawCloud(cx, cy, s) {
   ctx.restore();
 }
 
-function drawPineTree() {
+// 위치, 스케일, 좌우반전을 조절할 수 있도록 파라미터 추가
+function drawPineTree(tx = 0, ty = 0, scale = 1, flip = false) {
   ctx.save();
+  ctx.translate(tx, ty);
+  ctx.scale(flip ? -scale : scale, scale);
+  
   ctx.strokeStyle = '#422c1e';
   ctx.lineWidth = 14;
   ctx.lineCap = 'round';
@@ -609,28 +618,49 @@ function drawSongpyeon(r) {
   ctx.save();
   ctx.translate(r.x, r.y);
   ctx.rotate(r.angle);
+  
   ctx.beginPath();
-  ctx.arc(0, 0, r.size, 0, Math.PI, false);
+  // 송편을 귀여운 만두/반달 모양(위가 볼록하고 아래가 둥근형태)으로 수정
+  ctx.arc(0, 2, r.size, Math.PI, 2 * Math.PI, false);
+  ctx.quadraticCurveTo(0, r.size * 0.5 + 2, -r.size, 2);
   ctx.closePath();
 
+  // 입체감을 위한 방사형 그라데이션 (윤기 베이스)
+  const grad = ctx.createRadialGradient(-r.size * 0.3, -r.size * 0.3, r.size * 0.1, 0, 0, r.size);
   if (r.type === 'white') {
-    ctx.fillStyle = '#ffffff';
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.5, '#fdfdfd');
+    grad.addColorStop(1, '#e0e0e0');
     ctx.strokeStyle = '#4e331b';
   } else if (r.type === 'pink') {
-    ctx.fillStyle = '#ffb3c7';
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, '#ffb3c7');
+    grad.addColorStop(1, '#d97d95');
     ctx.strokeStyle = '#6e2738';
   } else {
-    ctx.fillStyle = '#a26bb9';
+    grad.addColorStop(0, '#f2d9ff');
+    grad.addColorStop(0.4, '#a26bb9');
+    grad.addColorStop(1, '#7a4291');
     ctx.strokeStyle = '#3d164a';
   }
+  
+  ctx.fillStyle = grad;
   ctx.lineWidth = 3;
   ctx.fill();
   ctx.stroke();
 
+  // 젤리/유리 같은 큰 윤기 (좌측 상단 곡선)
   ctx.beginPath();
-  ctx.arc(-6, -4, 3.8, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.ellipse(-r.size * 0.35, -r.size * 0.3, r.size * 0.3, r.size * 0.15, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.fill();
+
+  // 작은 반사광 (우측 하단)
+  ctx.beginPath();
+  ctx.ellipse(r.size * 0.4, r.size * 0.1, r.size * 0.1, r.size * 0.05, -0.4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+  ctx.fill();
+
   ctx.restore();
 }
 
@@ -641,36 +671,32 @@ function drawPlayer(x, y) {
   ctx.save();
   ctx.translate(x, y);
 
-  // 피버 모드일 때 토끼 뒤에 불꽃 일러스트 그리기
-  if (fever) {
+  // 피버 모드일 때 토끼 뒤에 불꽃 일러스트 (Fade In 적용)
+  if (feverTransition > 0) {
     const t = Date.now() / 150;
     ctx.save();
+    ctx.globalAlpha = feverTransition; // 불꽃도 자연스럽게 서서히 나타남
     
     const drawFlame = (color, w, h, offset) => {
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(0, 45); // 밑에서부터 시작
-      // 불꽃 좌측 모양
+      ctx.moveTo(0, 45); 
+      // 불꽃 좌측 
       ctx.bezierCurveTo(-w*1.2, 45, -w*1.5, -10, -w*0.8, -30 + Math.sin(t + offset) * 10);
       ctx.bezierCurveTo(-w*0.5, -15, -w*0.4, -25, -w*0.3, -h*0.75 + Math.cos(t * 1.3) * 10);
       ctx.bezierCurveTo(-w*0.1, -h*0.4, -w*0.05, -h*0.5, 0, -h + Math.sin(t * 1.5) * 12);
-      // 불꽃 우측 모양
+      // 불꽃 우측 
       ctx.bezierCurveTo(w*0.05, -h*0.5, w*0.1, -h*0.4, w*0.3, -h*0.75 + Math.cos(t * 1.1) * 10);
       ctx.bezierCurveTo(w*0.4, -25, w*0.5, -15, w*0.8, -30 + Math.sin(t * 1.4) * 10);
       ctx.bezierCurveTo(w*1.5, -10, w*1.2, 45, 0, 45);
       ctx.fill();
     };
 
-    // 1겹 (주황/빨강 빛)
     ctx.shadowColor = '#ff2600';
     ctx.shadowBlur = 10;
     drawFlame('#ff4d00', 65, 85, 0); 
-
-    // 2겹 (주황/노랑)
     ctx.shadowBlur = 0;
     drawFlame('#ffae00', 50, 65, 0.5); 
-
-    // 3겹 (밝은 노랑)
     drawFlame('#fff066', 35, 45, 1); 
 
     ctx.restore();
@@ -746,7 +772,6 @@ function drawPlayer(x, y) {
   drawArms(false);
   drawBody(false);
 
-  // 3-1. 귀 안쪽 옅은 노란색
   ctx.fillStyle = '#fff2cc'; 
   ctx.beginPath();
   ctx.ellipse(-20, -32, 7, 12, -0.2, 0, Math.PI*2);
@@ -755,7 +780,6 @@ function drawPlayer(x, y) {
   ctx.ellipse(20, -32, 7, 12, 0.2, 0, Math.PI*2);
   ctx.fill();
 
-  // 3-2. 핑크빛 볼터치
   ctx.fillStyle = '#ffb3c6';
   ctx.beginPath();
   ctx.ellipse(-26, 6, 9, 6, 0, 0, Math.PI*2);
@@ -764,10 +788,8 @@ function drawPlayer(x, y) {
   ctx.ellipse(26, 6, 9, 6, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // 3-3. 송편 종류에 따른 표정 변화
   if (rabbit.eatTimer > 0) {
     if (rabbit.eatType === 'bad') {
-      // 😭 팥송편: 우는 표정 (눈 >< 모양)
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#2c1910';
       ctx.beginPath();
@@ -777,7 +799,6 @@ function drawPlayer(x, y) {
       ctx.moveTo(16, -2); ctx.lineTo(11, 2); ctx.lineTo(16, 6);
       ctx.stroke();
 
-      // 눈물 (하늘색)
       ctx.fillStyle = '#74c0fc';
       ctx.beginPath();
       ctx.ellipse(-11, 9, 3, 4, 0, 0, Math.PI*2);
@@ -786,13 +807,11 @@ function drawPlayer(x, y) {
       ctx.ellipse(11, 9, 3, 4, 0, 0, Math.PI*2);
       ctx.fill();
 
-      // 우는 입 모양
       ctx.fillStyle = '#2c1910';
       ctx.beginPath();
       ctx.ellipse(0, 8, 4, 5, 0, 0, Math.PI*2);
       ctx.fill();
     } else if (rabbit.eatType === 'good') {
-      // 😍 꿀송편: 웃는 표정 (눈 ^^ 모양)
       ctx.lineWidth = 3;
       ctx.strokeStyle = '#2c1910';
       ctx.beginPath();
@@ -802,19 +821,16 @@ function drawPlayer(x, y) {
       ctx.moveTo(8, 1); ctx.quadraticCurveTo(12, -4, 16, 1);
       ctx.stroke();
 
-      // 벌린 입
       ctx.fillStyle = '#2c1910';
       ctx.beginPath();
       ctx.arc(0, 4, 6, 0, Math.PI, false);
       ctx.fill();
-      // 혀 (분홍색)
       ctx.fillStyle = '#ff87a3';
       ctx.beginPath();
       ctx.arc(0, 6, 4, 0, Math.PI, false);
       ctx.fill();
     }
   } else {
-    // 😐 평상시 표정
     ctx.fillStyle = '#2c1910';
     ctx.beginPath();
     ctx.arc(-12, -1, 4, 0, Math.PI*2);
@@ -823,7 +839,6 @@ function drawPlayer(x, y) {
     ctx.arc(12, -1, 4, 0, Math.PI*2);
     ctx.fill();
 
-    // 기본 입 (w 모양)
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#2c1910';
     ctx.beginPath();
@@ -846,7 +861,13 @@ function gameLoop(timestamp) {
   drawNightSky(timestamp * 0.001);
 
   if (gameState === 'PLAYING') {
-    // 먹는 애니메이션 타이머 감소
+    // Fade 효과 계산
+    if (fever) {
+      feverTransition = Math.min(1, feverTransition + 0.015);
+    } else {
+      feverTransition = Math.max(0, feverTransition - 0.05);
+    }
+
     if (rabbit.eatTimer > 0) rabbit.eatTimer--;
 
     let dx = rabbit.targetX - rabbit.x;
@@ -869,14 +890,12 @@ function gameLoop(timestamp) {
         if (r.type === 'purple') {
           score = Math.max(0, score - 10);
           playSound('bad');
-          // 팥송편 (보라색 텍스트)
           addEatParticle(rabbit.x, rabbit.y - 40, '-10', '#a26bb9');
           rabbit.eatTimer = 25;
           rabbit.eatType = 'bad';
         } else {
           score += 10;
           playSound('good');
-          // 꿀송편 (흰색 또는 핑크색 텍스트)
           const textColor = r.type === 'white' ? '#ffffff' : '#ffb3c7';
           addEatParticle(rabbit.x, rabbit.y - 40, '+10', textColor);
           rabbit.eatTimer = 25;
@@ -898,12 +917,10 @@ function gameLoop(timestamp) {
       ctx.font = 'bold 26px Jua';
       ctx.globalAlpha = Math.max(0, p.alpha);
       
-      // 글자가 잘 보이도록 굵은 테두리 추가
       ctx.lineWidth = 4;
       ctx.strokeStyle = '#2c1910';
       ctx.strokeText(p.text, p.x - 20, p.y);
       
-      // 글자 채우기
       ctx.fillStyle = p.color;
       ctx.fillText(p.text, p.x - 20, p.y);
       ctx.restore();
@@ -928,6 +945,7 @@ function startGame() {
   score = 0;
   timeLeft = 60;
   fever = false;
+  feverTransition = 0; // 시작 시 Fade 초기화
   rices.length = 0;
   particles.length = 0;
   rabbit.x = width / 2;
