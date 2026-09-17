@@ -2,680 +2,1030 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>달토끼의 파티 준비</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>달토끼 송편 잡기</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
     * {
-      touch-action: none;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
+      box-sizing: border-box;
       user-select: none;
-    }
-    body {
+      -webkit-user-select: none;
       margin: 0;
       padding: 0;
-      background: #0b0816;
+      font-family: 'Jua', sans-serif;
+    }
+
+    body {
+      background-color: #1a1a24;
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 100vw;
-      height: 100vh;
-      font-family: 'Jua', sans-serif;
+      min-height: 100vh;
       overflow: hidden;
     }
-    #gameWrapper {
+
+    #game-container {
       position: relative;
-      width: 100%;
-      max-width: 450px;
-      height: 100%;
-      max-height: 800px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      width: 100vw;
+      max-width: 420px;
+      height: 100vh;
+      max-height: 860px;
+      background: #141c2b;
+      overflow: hidden;
+      box-shadow: 0 0 35px rgba(0,0,0,0.8);
+      border-radius: 14px;
     }
+
     canvas {
       width: 100%;
       height: 100%;
-      object-fit: contain;
       display: block;
+    }
+
+    /* 상단 UI 바 */
+    #top-ui {
+      position: absolute;
+      top: 14px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 10px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .ui-pill {
+      background: rgba(255, 255, 255, 0.95);
+      border: 3px solid #5d3a1a;
+      border-radius: 25px;
+      padding: 5px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1.15rem;
+      color: #4a2810;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    }
+
+    .ui-pill.fever-timer {
+      border-color: #ff2a4b;
+      color: #ff1f3d;
+      animation: fever-blink 0.4s infinite alternate;
+    }
+
+    @keyframes fever-blink {
+      from { transform: scale(1); }
+      to { transform: scale(1.1); background: #ffe3e3; }
+    }
+
+    #fever-banner {
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg, #ff3838, #ffb300);
+      color: white;
+      padding: 6px 18px; 
+      border-radius: 30px;
+      border: 3px solid #ffffff;
+      font-size: 1.15rem; 
+      white-space: nowrap; 
+      text-shadow: 2px 2px 0 #941e00;
+      display: none;
+      animation: pulse-banner 0.45s infinite alternate;
+      z-index: 12;
+      box-shadow: 0 0 20px #ff6600;
+    }
+
+    @keyframes pulse-banner {
+      0% { transform: translateX(-50%) scale(0.95); }
+      100% { transform: translateX(-50%) scale(1.08); }
+    }
+
+    /* 모달 */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 15, 28, 0.78);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+      padding: 20px;
+    }
+
+    .dialog-box {
+      width: 90%;
+      max-width: 340px;
+      background: #fffdf5;
+      border: 4px solid #7c441b;
+      border-radius: 26px;
+      padding: 22px 18px;
+      text-align: center;
+      box-shadow: 0 8px 0 #4e2609;
+    }
+
+    .title-banner {
+      font-size: 2.2rem;
+      color: #ff5478;
+      text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 0 4px 0 #9e243b;
+      margin-bottom: 12px;
+    }
+
+    .info-card {
+      background: #faeed9;
+      border: 2px dashed #b8865a;
+      border-radius: 16px;
+      padding: 10px;
+      margin-bottom: 16px;
+    }
+
+    .rice-guide-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 6px 0;
+      font-size: 1.05rem;
+    }
+
+    .mini-rice-icon {
+      width: 32px;
+      height: 22px;
+      border-radius: 16px 16px 4px 4px;
+      border: 2px solid #333;
+      display: inline-block;
+      box-shadow: 1px 2px 0 rgba(0,0,0,0.15);
+    }
+    .icon-white { background: #ffffff; border-color: #5c3f26; }
+    .icon-pink  { background: #ffb8cc; border-color: #7a2b3d; }
+    .icon-purple{ background: #a46db8; border-color: #3b1747; }
+
+    .btn-pink {
+      background: #ff688c;
+      color: white;
+      font-size: 1.35rem;
+      border: 3px solid #632230;
+      border-radius: 25px;
+      padding: 10px 24px;
+      cursor: pointer;
+      margin: 8px 0;
+      width: 82%;
+      box-shadow: 0 4px 0 #632230;
+      transition: 0.1s;
+    }
+
+    .btn-pink:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #632230;
+    }
+
+    .btn-sub {
+      background: #fdf5e6;
+      border: 2px solid #9e6d44;
+      color: #633918;
+      border-radius: 20px;
+      padding: 7px 15px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin: 4px;
+    }
+
+    .ranking-table {
+      width: 100%;
+      margin: 12px 0;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .ranking-table tr {
+      border-bottom: 1px dashed #dfc2a6;
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 10px;
+      font-size: 1.05rem;
+    }
+
+    .rank-num { font-weight: bold; color: #e84b57; }
+    .rank-name { color: #5a3825; }
+    .rank-pts { font-weight: bold; color: #3c8254; }
+
+    input.name-input {
+      width: 78%;
+      padding: 8px 12px;
+      font-size: 1.1rem;
+      border: 2px solid #7c441b;
+      border-radius: 16px;
+      text-align: center;
+      margin-bottom: 10px;
+      outline: none;
     }
   </style>
 </head>
 <body>
 
-<div id="gameWrapper">
-  <canvas id="gameCanvas" width="420" height="640"></canvas>
+<div id="game-container">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="top-ui" style="display: none;">
+    <div class="ui-pill" id="timer-box">
+      <span>⏰ TIME</span>
+      <span id="time-text">60</span>
+    </div>
+    <div class="ui-pill">
+      <span>🍡 SCORE</span>
+      <span id="score-text">0</span>
+    </div>
+  </div>
+
+  <div id="fever-banner">🔥 FEVER TIME! 🔥</div>
+
+  <!-- 시작 화면 -->
+  <div class="modal-overlay" id="start-modal">
+    <div class="dialog-box">
+      <div class="title-banner">달토끼 송편잡기</div>
+      <div class="info-card">
+        <p style="color:#5e3d23; font-size:0.95rem; margin-bottom:8px;">토끼에게 맛있는 꿀송편을 먹여 주세요!</p>
+        <div class="rice-guide-row">
+          <div style="display:flex; gap:3px;">
+            <span class="mini-rice-icon icon-white"></span>
+            <span class="mini-rice-icon icon-pink"></span>
+          </div>
+          <span style="color:#c9325e; font-weight:bold;">꿀송편: +10점</span>
+        </div>
+        <div class="rice-guide-row">
+          <span class="mini-rice-icon icon-purple"></span>
+          <span style="color:#6d3596; font-weight:bold;">팥송편: -10점</span>
+        </div>
+      </div>
+      <button class="btn-pink" id="start-btn">★ START ★</button>
+      <div>
+        <button class="btn-sub" id="open-rank-btn">🏆 랭킹 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 게임 오버 -->
+  <div class="modal-overlay" id="gameover-modal" style="display: none;">
+    <div class="dialog-box" id="capture-area">
+      <div style="font-size:1.75rem; color:#f05255; margin-bottom:8px;">★ GAME OVER ★</div>
+      <p style="color:#6d482f; font-size:1rem;">YOUR SCORE</p>
+      <div style="font-size: 3.2rem; color:#4a2810; margin: 2px 0;" id="final-score">0</div>
+      <div style="margin-top:8px;">
+        <input type="text" id="player-name" class="name-input" placeholder="이름 입력 (최대 6자)" maxlength="6">
+        <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn-sub" id="download-card-btn">💾 점수 이미지 저장</button>
+        <button class="btn-sub" id="restart-btn">다시하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 랭킹 -->
+  <div class="modal-overlay" id="ranking-modal" style="display: none;">
+    <div class="dialog-box">
+      <div style="font-size:1.6rem; color:#e7526f; margin-bottom:10px;">👑 명예의 전당 랭킹</div>
+      <div class="ranking-table" id="ranking-list"></div>
+      <button class="btn-pink" id="close-rank-btn" style="font-size:1rem; padding:7px 18px;">닫기</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+/* ==========================================================
+   1. 오디오 합성기 (BGM & 효과음)
+   ========================================================== */
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
 
-let isStarted = false;
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+    startBGM();
+  }
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  if (type === 'good') {
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  } else if (type === 'bad') {
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.linearRampToValueAtTime(95, now + 0.2);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+}
+
+function startBGM() {
+  const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
+  let step = 0;
+  setInterval(() => {
+    if (gameState !== 'PLAYING') return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = notes[step % notes.length];
+    gain.gain.setValueAtTime(0.045, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.28);
+    step = (step + 1) % 12;
+  }, 310);
+}
+
+/* ==========================================================
+   2. 캔버스 및 게임 변수 설정
+   ========================================================== */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('game-container');
+
+let width, height;
+function resize() {
+  width = container.clientWidth;
+  height = container.clientHeight;
+  canvas.width = width;
+  canvas.height = height;
+}
+resize();
+window.addEventListener('resize', resize);
+
+let gameState = 'START';
 let score = 0;
-let lives = 3;
-let gameOver = false;
-let gameOverReason = "";
-let frameCount = 0;
-
-const TOTAL_TIME = 60;
-let timeLeft = TOTAL_TIME;
+let timeLeft = 60;
 let timerInterval = null;
+let fever = false;
 
-const player = {
-  x: canvas.width / 2 - 35,
-  y: canvas.height - 95,
-  width: 70,
-  height: 85,
-  speed: 8
+// 토끼 변수
+const rabbit = {
+  x: width / 2,
+  y: height - 120,
+  targetX: width / 2,
+  speed: 0.16,
+  eatTimer: 0,
+  eatType: 'none'
 };
 
-const startBtn = {
-  x: canvas.width / 2 - 85,
-  y: canvas.height / 2 + 45,
-  width: 170,
-  height: 52,
-  isHovered: false
-};
+container.addEventListener('touchstart', handleTouch, { passive: false });
+container.addEventListener('touchmove', handleTouch, { passive: false });
+container.addEventListener('mousemove', (e) => {
+  if (gameState !== 'PLAYING') return;
+  const rect = canvas.getBoundingClientRect();
+  rabbit.targetX = e.clientX - rect.left;
+});
 
-const restartBtn = {
-  x: canvas.width / 2 - 85,
-  y: canvas.height / 2 + 50,
-  width: 170,
-  height: 50,
-  isHovered: false
-};
+function handleTouch(e) {
+  if (gameState !== 'PLAYING') return;
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  rabbit.targetX = touch.clientX - rect.left;
+}
 
-const stars = [];
-for (let i = 0; i < 40; i++) {
-  stars.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * (canvas.height * 0.6),
-    r: Math.random() * 1.5 + 0.5,
-    alpha: Math.random() * 0.8 + 0.2,
-    speed: Math.random() * 0.03 + 0.01
+const stars = Array.from({ length: 22 }, () => ({
+  x: Math.random() * 420,
+  y: Math.random() * 320,
+  size: Math.random() * 2 + 1.2,
+  twinkleSpeed: Math.random() * 0.05 + 0.02,
+  twinkleOffset: Math.random() * Math.PI * 2
+}));
+
+const clouds = [
+  { x: 30, y: 140, scale: 0.9, speed: 0.25 },
+  { x: 220, y: 80, scale: 1.15, speed: 0.18 },
+  { x: 350, y: 220, scale: 0.8, speed: 0.22 }
+];
+
+/* ==========================================================
+   3. 배경 렌더링 (밤하늘, 달, 소나무)
+   ========================================================== */
+function drawNightSky(t) {
+  // 평소 배경 하늘색 항상 유지
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+  skyGrad.addColorStop(0, '#152238');
+  skyGrad.addColorStop(0.5, '#283b58');
+  skyGrad.addColorStop(0.85, '#6c7f99');
+  skyGrad.addColorStop(0.85, '#4f692b'); 
+  skyGrad.addColorStop(1, '#34451c');
+  
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // 별 항상 유지
+  stars.forEach((s) => {
+    const alpha = 0.35 + Math.abs(Math.sin(t * s.twinkleSpeed + s.twinkleOffset)) * 0.65;
+    ctx.save();
+    ctx.fillStyle = `rgba(255, 255, 210, ${alpha})`;
+    ctx.shadowColor = '#fff69b';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(s.x - s.size * 2, s.y - 0.7, s.size * 4, 1.4);
+    ctx.fillRect(s.x - 0.7, s.y - s.size * 2, 1.4, s.size * 4);
+    ctx.restore();
+  });
+
+  // 달 항상 유지
+  ctx.save();
+  const moonX = width - 95;
+  const moonY = 110;
+  const moonRadius = 48;
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonRadius + 14, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 244, 160, 0.15)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff4a1';
+  ctx.shadowColor = '#ffe259';
+  ctx.shadowBlur = 18;
+  ctx.fill();
+  
+  ctx.fillStyle = '#e8d984';
+  ctx.beginPath();
+  ctx.arc(moonX - 14, moonY - 10, 11, 0, Math.PI * 2);
+  ctx.arc(moonX + 16, moonY - 14, 13, 0, Math.PI * 2);
+  ctx.arc(moonX + 6, moonY + 16, 15, 0, Math.PI * 2);
+  ctx.arc(moonX - 18, moonY + 14, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 구름 항상 유지
+  clouds.forEach(c => {
+    c.x += c.speed;
+    if (c.x > width + 100) c.x = -120;
+    drawCloud(c.x, c.y, c.scale);
+  });
+
+  // 소나무 항상 유지
+  drawPineTree();
+
+  // 땅 항상 유지
+  const groundY = height - 68;
+  ctx.fillStyle = '#d5af72';
+  ctx.fillRect(0, groundY, width, 68);
+  ctx.fillStyle = '#b38f56';
+  ctx.fillRect(0, groundY, width, 6);
+
+  drawFlower(35, groundY - 2, '#ff6e8a');
+  drawFlower(width - 55, groundY - 3, '#ffa347');
+  drawFlower(width - 95, groundY + 10, '#ffffff');
+
+  // ⭐ 피버 타임일 때 기존 배경 위에 투명도 있는 붉은 그라데이션 오버레이 추가
+  if (fever) {
+    ctx.save();
+    const overlayGrad = ctx.createLinearGradient(0, 0, 0, height);
+    // 투명도를 낮춰서(0.25~0.35) 뒷 배경이 보이게 처리
+    overlayGrad.addColorStop(0, 'rgba(200, 20, 50, 0.35)');
+    overlayGrad.addColorStop(0.5, 'rgba(220, 50, 80, 0.25)');
+    overlayGrad.addColorStop(1, 'rgba(255, 100, 120, 0.35)');
+    ctx.fillStyle = overlayGrad;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+}
+
+function drawCloud(cx, cy, s) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(230, 242, 255, 0.28)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 22 * s, 0, Math.PI * 2);
+  ctx.arc(cx + 25 * s, cy - 10 * s, 26 * s, 0, Math.PI * 2);
+  ctx.arc(cx + 55 * s, cy - 4 * s, 20 * s, 0, Math.PI * 2);
+  ctx.arc(cx + 35 * s, cy + 12 * s, 24 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPineTree() {
+  ctx.save();
+  ctx.strokeStyle = '#422c1e';
+  ctx.lineWidth = 14;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 10);
+  ctx.quadraticCurveTo(80, 20, 110, 60);
+  ctx.stroke();
+  
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(40, 20);
+  ctx.quadraticCurveTo(90, 80, 70, 110);
+  ctx.stroke();
+
+  drawPineNeedles(30, -10, 45);
+  drawPineNeedles(90, 30, 35);
+  drawPineNeedles(120, 65, 30);
+  drawPineNeedles(60, 105, 35);
+  drawPineNeedles(0, 60, 40);
+  ctx.restore();
+}
+
+function drawPineNeedles(x, y, radius) {
+  ctx.fillStyle = '#1e3822'; 
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.arc(x - radius*0.6, y + radius*0.5, radius*0.8, 0, Math.PI * 2);
+  ctx.arc(x + radius*0.6, y + radius*0.5, radius*0.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2a5231';
+  ctx.beginPath();
+  ctx.arc(x, y - radius*0.2, radius*0.75, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawFlower(fx, fy, color) {
+  ctx.save();
+  ctx.fillStyle = '#4c7827';
+  ctx.fillRect(fx - 1, fy, 3, 10);
+  ctx.fillStyle = color;
+  for (let i = 0; i < 5; i++) {
+    const ang = (i * Math.PI * 2) / 5;
+    ctx.beginPath();
+    ctx.arc(fx + Math.cos(ang) * 5, fy + Math.sin(ang) * 5, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = '#ffdf40';
+  ctx.beginPath();
+  ctx.arc(fx, fy, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ==========================================================
+   4. 송편 생성 및 렌더링
+   ========================================================== */
+const rices = [];
+const particles = [];
+
+function spawnRice() {
+  const isBad = Math.random() < 0.28;
+  let riceType = isBad ? 'purple' : (Math.random() < 0.5 ? 'white' : 'pink');
+
+  rices.push({
+    x: Math.random() * (width - 70) + 35,
+    y: -35,
+    speed: fever ? (Math.random() * 3.5 + 6.5) : (Math.random() * 2 + 3.6),
+    type: riceType,
+    size: 24,
+    angle: (Math.random() - 0.5) * 0.4
   });
 }
 
-const itemTypes = [
-  { type: "white", score: 10, color: "#ffffff", edgeColor: "#e2e8f0", radius: 16, speed: 3.2 },
-  { type: "pink",  score: 20, color: "#fbb6ce", edgeColor: "#f687b3", radius: 16, speed: 3.8 },
-  { type: "green", score: 30, color: "#9ae6b4", edgeColor: "#48bb78", radius: 16, speed: 4.3 },
-  { type: "chestnut", score: 0, color: "#5c3a21", radius: 18, speed: 3.6 }
-];
+function addEatParticle(x, y, text, color) {
+  particles.push({ x, y, text, color, alpha: 1, vy: -2 });
+}
 
-const items = [];
+function drawSongpyeon(r) {
+  ctx.save();
+  ctx.translate(r.x, r.y);
+  ctx.rotate(r.angle);
+  ctx.beginPath();
+  ctx.arc(0, 0, r.size, 0, Math.PI, false);
+  ctx.closePath();
 
-function startTimer() {
+  if (r.type === 'white') {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#4e331b';
+  } else if (r.type === 'pink') {
+    ctx.fillStyle = '#ffb3c7';
+    ctx.strokeStyle = '#6e2738';
+  } else {
+    ctx.fillStyle = '#a26bb9';
+    ctx.strokeStyle = '#3d164a';
+  }
+  ctx.lineWidth = 3;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(-6, -4, 3.8, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ==========================================================
+   5. 캐릭터 (토끼) 렌더링
+   ========================================================== */
+function drawPlayer(x, y) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  // 피버 모드일 때 토끼 뒤에 불꽃 일러스트 그리기
+  if (fever) {
+    const t = Date.now() / 150;
+    ctx.save();
+    
+    const drawFlame = (color, w, h, offset) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, 45); // 밑에서부터 시작
+      // 불꽃 좌측 모양
+      ctx.bezierCurveTo(-w*1.2, 45, -w*1.5, -10, -w*0.8, -30 + Math.sin(t + offset) * 10);
+      ctx.bezierCurveTo(-w*0.5, -15, -w*0.4, -25, -w*0.3, -h*0.75 + Math.cos(t * 1.3) * 10);
+      ctx.bezierCurveTo(-w*0.1, -h*0.4, -w*0.05, -h*0.5, 0, -h + Math.sin(t * 1.5) * 12);
+      // 불꽃 우측 모양
+      ctx.bezierCurveTo(w*0.05, -h*0.5, w*0.1, -h*0.4, w*0.3, -h*0.75 + Math.cos(t * 1.1) * 10);
+      ctx.bezierCurveTo(w*0.4, -25, w*0.5, -15, w*0.8, -30 + Math.sin(t * 1.4) * 10);
+      ctx.bezierCurveTo(w*1.5, -10, w*1.2, 45, 0, 45);
+      ctx.fill();
+    };
+
+    // 1겹 (주황/빨강 빛)
+    ctx.shadowColor = '#ff2600';
+    ctx.shadowBlur = 10;
+    drawFlame('#ff4d00', 65, 85, 0); 
+
+    // 2겹 (주황/노랑)
+    ctx.shadowBlur = 0;
+    drawFlame('#ffae00', 50, 65, 0.5); 
+
+    // 3겹 (밝은 노랑)
+    drawFlame('#fff066', 35, 45, 1); 
+
+    ctx.restore();
+  }
+
+  const lineW = 3.5; 
+  ctx.save();
+  ctx.scale(0.85, 0.85);
+  
+  const drawEars = (isStroke) => {
+    ctx.beginPath();
+    ctx.ellipse(-20, -32, 16, 24, -0.2, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+    
+    ctx.beginPath();
+    ctx.ellipse(20, -32, 16, 24, 0.2, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+  };
+
+  const drawBody = (isStroke) => {
+    ctx.beginPath();
+    ctx.moveTo(-15, -15);
+    ctx.bezierCurveTo(-55, -15, -60, 25, -35, 42); 
+    ctx.bezierCurveTo(-15, 52, 15, 52, 35, 42);   
+    ctx.bezierCurveTo(60, 25, 55, -15, 15, -15);   
+    ctx.bezierCurveTo(5, -20, -5, -20, -15, -15);  
+    ctx.closePath();
+    if(isStroke) ctx.stroke(); else ctx.fill();
+  };
+
+  const drawArms = (isStroke) => {
+    ctx.beginPath();
+    ctx.ellipse(-32, 18, 11, 8, 0.4, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(32, 18, 11, 8, -0.4, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+  };
+
+  const drawLegs = (isStroke) => {
+    ctx.beginPath();
+    ctx.ellipse(-16, 42, 11, 8, 0, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+
+    ctx.beginPath();
+    ctx.ellipse(16, 42, 11, 8, 0, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+  };
+
+  const drawTail = (isStroke) => {
+    ctx.beginPath();
+    ctx.arc(-42, 32, 8, 0, Math.PI*2);
+    if(isStroke) ctx.stroke(); else ctx.fill();
+  }
+
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lineW * 2;
+  ctx.strokeStyle = '#2c1910'; 
+  
+  drawTail(true);
+  drawEars(true);
+  drawLegs(true);
+  drawArms(true);
+  drawBody(true);
+
+  ctx.fillStyle = '#ffffff';
+  
+  drawTail(false);
+  drawEars(false);
+  drawLegs(false);
+  drawArms(false);
+  drawBody(false);
+
+  // 3-1. 귀 안쪽 옅은 노란색
+  ctx.fillStyle = '#fff2cc'; 
+  ctx.beginPath();
+  ctx.ellipse(-20, -32, 7, 12, -0.2, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(20, -32, 7, 12, 0.2, 0, Math.PI*2);
+  ctx.fill();
+
+  // 3-2. 핑크빛 볼터치
+  ctx.fillStyle = '#ffb3c6';
+  ctx.beginPath();
+  ctx.ellipse(-26, 6, 9, 6, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(26, 6, 9, 6, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // 3-3. 송편 종류에 따른 표정 변화
+  if (rabbit.eatTimer > 0) {
+    if (rabbit.eatType === 'bad') {
+      // 😭 팥송편: 우는 표정 (눈 >< 모양)
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#2c1910';
+      ctx.beginPath();
+      ctx.moveTo(-16, -2); ctx.lineTo(-11, 2); ctx.lineTo(-16, 6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(16, -2); ctx.lineTo(11, 2); ctx.lineTo(16, 6);
+      ctx.stroke();
+
+      // 눈물 (하늘색)
+      ctx.fillStyle = '#74c0fc';
+      ctx.beginPath();
+      ctx.ellipse(-11, 9, 3, 4, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(11, 9, 3, 4, 0, 0, Math.PI*2);
+      ctx.fill();
+
+      // 우는 입 모양
+      ctx.fillStyle = '#2c1910';
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 4, 5, 0, 0, Math.PI*2);
+      ctx.fill();
+    } else if (rabbit.eatType === 'good') {
+      // 😍 꿀송편: 웃는 표정 (눈 ^^ 모양)
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#2c1910';
+      ctx.beginPath();
+      ctx.moveTo(-16, 1); ctx.quadraticCurveTo(-12, -4, -8, 1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(8, 1); ctx.quadraticCurveTo(12, -4, 16, 1);
+      ctx.stroke();
+
+      // 벌린 입
+      ctx.fillStyle = '#2c1910';
+      ctx.beginPath();
+      ctx.arc(0, 4, 6, 0, Math.PI, false);
+      ctx.fill();
+      // 혀 (분홍색)
+      ctx.fillStyle = '#ff87a3';
+      ctx.beginPath();
+      ctx.arc(0, 6, 4, 0, Math.PI, false);
+      ctx.fill();
+    }
+  } else {
+    // 😐 평상시 표정
+    ctx.fillStyle = '#2c1910';
+    ctx.beginPath();
+    ctx.arc(-12, -1, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(12, -1, 4, 0, Math.PI*2);
+    ctx.fill();
+
+    // 기본 입 (w 모양)
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#2c1910';
+    ctx.beginPath();
+    ctx.moveTo(-5, 4);
+    ctx.quadraticCurveTo(-2.5, 9, 0, 5);
+    ctx.quadraticCurveTo(2.5, 9, 5, 4);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+  ctx.restore();
+}
+
+/* ==========================================================
+   6. 게임 메인 루프
+   ========================================================== */
+let lastSpawn = 0;
+
+function gameLoop(timestamp) {
+  drawNightSky(timestamp * 0.001);
+
+  if (gameState === 'PLAYING') {
+    // 먹는 애니메이션 타이머 감소
+    if (rabbit.eatTimer > 0) rabbit.eatTimer--;
+
+    let dx = rabbit.targetX - rabbit.x;
+    rabbit.x += dx * rabbit.speed;
+    rabbit.x = Math.max(50, Math.min(width - 50, rabbit.x));
+
+    const spawnDelay = fever ? 260 : 520;
+    if (timestamp - lastSpawn > spawnDelay) {
+      spawnRice();
+      lastSpawn = timestamp;
+    }
+
+    for (let i = rices.length - 1; i >= 0; i--) {
+      const r = rices[i];
+      r.y += r.speed;
+      drawSongpyeon(r);
+
+      const dist = Math.hypot(rabbit.x - r.x, rabbit.y - r.y);
+      if (dist < 55) {
+        if (r.type === 'purple') {
+          score = Math.max(0, score - 10);
+          playSound('bad');
+          // 팥송편 (보라색 텍스트)
+          addEatParticle(rabbit.x, rabbit.y - 40, '-10', '#a26bb9');
+          rabbit.eatTimer = 25;
+          rabbit.eatType = 'bad';
+        } else {
+          score += 10;
+          playSound('good');
+          // 꿀송편 (흰색 또는 핑크색 텍스트)
+          const textColor = r.type === 'white' ? '#ffffff' : '#ffb3c7';
+          addEatParticle(rabbit.x, rabbit.y - 40, '+10', textColor);
+          rabbit.eatTimer = 25;
+          rabbit.eatType = 'good';
+        }
+        document.getElementById('score-text').innerText = score;
+        rices.splice(i, 1);
+        continue;
+      }
+
+      if (r.y > height + 40) rices.splice(i, 1);
+    }
+
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.y += p.vy;
+      p.alpha -= 0.024;
+      ctx.save();
+      ctx.font = 'bold 26px Jua';
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      
+      // 글자가 잘 보이도록 굵은 테두리 추가
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#2c1910';
+      ctx.strokeText(p.text, p.x - 20, p.y);
+      
+      // 글자 채우기
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, p.x - 20, p.y);
+      ctx.restore();
+      if (p.alpha <= 0) particles.splice(i, 1);
+    }
+    
+    drawPlayer(rabbit.x, rabbit.y);
+  } else {
+    drawPlayer(rabbit.x, rabbit.y);
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+
+/* ==========================================================
+   7. 게임 상태 및 랭킹 관리
+   ========================================================== */
+function startGame() {
+  initAudio();
+  gameState = 'PLAYING';
+  score = 0;
+  timeLeft = 60;
+  fever = false;
+  rices.length = 0;
+  particles.length = 0;
+  rabbit.x = width / 2;
+  rabbit.targetX = width / 2;
+  rabbit.eatTimer = 0;
+  rabbit.eatType = 'none';
+
+  document.getElementById('score-text').innerText = '0';
+  document.getElementById('time-text').innerText = '60';
+  document.getElementById('top-ui').style.display = 'flex';
+  document.getElementById('start-modal').style.display = 'none';
+  document.getElementById('gameover-modal').style.display = 'none';
+  document.getElementById('fever-banner').style.display = 'none';
+  document.getElementById('timer-box').classList.remove('fever-timer');
+
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
-    if (isStarted && !gameOver) {
-      timeLeft--;
-      if (timeLeft <= 0) {
-        timeLeft = 0;
-        endGame("time");
-      }
+    timeLeft--;
+    document.getElementById('time-text').innerText = timeLeft;
+
+    if (timeLeft <= 10 && timeLeft > 0) {
+      fever = true;
+      document.getElementById('fever-banner').style.display = 'block';
+      document.getElementById('timer-box').classList.add('fever-timer');
     }
+
+    if (timeLeft <= 0) endGame();
   }, 1000);
 }
 
-function endGame(reason) {
-  gameOver = true;
-  gameOverReason = reason;
-  if (timerInterval) clearInterval(timerInterval);
+function endGame() {
+  clearInterval(timerInterval);
+  gameState = 'GAMEOVER';
+  fever = false;
+  document.getElementById('fever-banner').style.display = 'none';
+  document.getElementById('final-score').innerText = score;
+  document.getElementById('gameover-modal').style.display = 'flex';
 }
 
-function startGame() {
-  isStarted = true;
-  score = 0;
-  lives = 3;
-  timeLeft = TOTAL_TIME;
-  items.length = 0;
-  gameOver = false;
-  gameOverReason = "";
-  startTimer();
+function getRankings() {
+  return JSON.parse(localStorage.getItem('rabbit_rankings_v5') || '[]');
 }
 
-function getCanvasCoords(clientX, clientY) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  return {
-    x: (clientX - rect.left) * scaleX,
-    y: (clientY - rect.top) * scaleY
-  };
+function saveRanking(name, score) {
+  const ranks = getRankings();
+  ranks.push({ name: name || '달토끼', score, date: new Date().toLocaleDateString() });
+  ranks.sort((a, b) => b.score - a.score);
+  localStorage.setItem('rabbit_rankings_v5', JSON.stringify(ranks.slice(0, 10)));
 }
 
-function isInsideButton(pos, btn) {
-  return pos.x >= btn.x && pos.x <= btn.x + btn.width &&
-         pos.y >= btn.y && pos.y <= btn.y + btn.height;
-}
-
-function handleInputMove(clientX, clientY) {
-  const pos = getCanvasCoords(clientX, clientY);
-  if (isStarted && !gameOver) {
-    player.x = Math.max(0, Math.min(canvas.width - player.width, pos.x - player.width / 2));
-  }
-}
-
-function handleInputPress(clientX, clientY) {
-  const pos = getCanvasCoords(clientX, clientY);
-  if (!isStarted) {
-    if (isInsideButton(pos, startBtn)) startGame();
-  } else if (gameOver) {
-    if (isInsideButton(pos, restartBtn)) startGame();
-  }
-}
-
-canvas.addEventListener("touchstart", (e) => {
-  if (e.touches.length > 0) {
-    handleInputPress(e.touches[0].clientX, e.touches[0].clientY);
-  }
-  e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener("touchmove", (e) => {
-  if (e.touches.length > 0) {
-    handleInputMove(e.touches[0].clientX, e.touches[0].clientY);
-  }
-  e.preventDefault();
-}, { passive: false });
-
-canvas.addEventListener("mousemove", (e) => handleInputMove(e.clientX, e.clientY));
-canvas.addEventListener("mousedown", (e) => handleInputPress(e.clientX, e.clientY));
-
-function spawnItem() {
-  const rand = Math.random();
-  let selected;
-  if (rand < 0.40) selected = itemTypes[0];
-  else if (rand < 0.65) selected = itemTypes[1];
-  else if (rand < 0.80) selected = itemTypes[2];
-  else selected = itemTypes[3];
-
-  items.push({
-    x: Math.random() * (canvas.width - 60) + 30,
-    y: -25,
-    rot: Math.random() * Math.PI * 2,
-    rotSpeed: (Math.random() - 0.5) * 0.04,
-    ...selected
-  });
-}
-
-function checkCollision(item, player) {
-  const basket = {
-    x: player.x,
-    y: player.y + 40,
-    width: player.width,
-    height: 40
-  };
-  const closeX = Math.max(basket.x, Math.min(item.x, basket.x + basket.width));
-  const closeY = Math.max(basket.y, Math.min(item.y, basket.y + basket.height));
-  const dx = item.x - closeX;
-  const dy = item.y - closeY;
-  return (dx * dx + dy * dy) < (item.radius * item.radius);
-}
-
-function drawPineTree(baseX, baseY, scale = 1) {
-  ctx.save();
-  ctx.translate(baseX, baseY);
-  ctx.scale(scale, scale);
-
-  ctx.fillStyle = "#1b1424";
-  ctx.beginPath();
-  ctx.moveTo(-7, 0);
-  ctx.quadraticCurveTo(-10, -40, -4, -80);
-  ctx.lineTo(4, -80);
-  ctx.quadraticCurveTo(8, -40, 7, 0);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#152422";
-  const levels = [
-    { y: -75, w: 45, h: 25 },
-    { y: -95, w: 38, h: 22 },
-    { y: -112, w: 28, h: 20 }
-  ];
-  levels.forEach(lvl => {
-    ctx.beginPath();
-    ctx.moveTo(0, lvl.y - lvl.h);
-    ctx.lineTo(lvl.w, lvl.y);
-    ctx.lineTo(-lvl.w, lvl.y);
-    ctx.closePath();
-    ctx.fill();
-  });
-  ctx.restore();
-}
-
-function drawSongpyeon(x, y, radius, color, edgeColor, angle) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-
-  ctx.beginPath();
-  ctx.arc(0, 0, radius, Math.PI * 0.1, Math.PI * 0.9, false);
-  ctx.quadraticCurveTo(0, -radius * 0.9, radius * Math.cos(Math.PI * 0.1), radius * Math.sin(Math.PI * 0.1));
-  ctx.closePath();
-
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = edgeColor;
-  ctx.stroke();
-
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.12)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(0, -radius * 0.2, radius * 0.6, 0.3, Math.PI - 0.3);
-  ctx.stroke();
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
-  ctx.beginPath();
-  ctx.ellipse(-radius * 0.3, -radius * 0.2, radius * 0.3, radius * 0.12, -0.3, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function drawChestnutBurr(x, y, radius, angle) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-
-  const spikeCount = 14;
-  const outerR = radius + 6;
-  const innerR = radius - 2;
-
-  ctx.fillStyle = "#4a2912";
-  ctx.beginPath();
-  for (let i = 0; i < spikeCount * 2; i++) {
-    const r = (i % 2 === 0) ? outerR : innerR;
-    const a = (Math.PI * 2 / (spikeCount * 2)) * i;
-    const px = Math.cos(a) * r;
-    const py = Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#78350f";
-  ctx.beginPath();
-  ctx.arc(0, 2, radius * 0.65, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#d97706";
-  ctx.beginPath();
-  ctx.ellipse(0, 3, radius * 0.35, radius * 0.45, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function drawRabbit(x, y, w, h) {
-  ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.ellipse(-14, -32, 7, 22, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#ffccd5";
-  ctx.beginPath();
-  ctx.ellipse(-14, -32, 4, 15, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.ellipse(14, -32, 7, 22, 0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#ffccd5";
-  ctx.beginPath();
-  ctx.ellipse(14, -32, 4, 15, 0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.ellipse(0, 4, 22, 20, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "rgba(255, 154, 162, 0.5)";
-  ctx.beginPath();
-  ctx.arc(-14, 5, 5, 0, Math.PI * 2);
-  ctx.arc(14, 5, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#2d3748";
-  ctx.beginPath();
-  ctx.arc(-8, 1, 2.5, 0, Math.PI * 2);
-  ctx.arc(8, 1, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#f687b3";
-  ctx.beginPath();
-  ctx.moveTo(0, 4);
-  ctx.lineTo(-2, 7);
-  ctx.lineTo(2, 7);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#b45309";
-  ctx.beginPath();
-  ctx.ellipse(0, 24, 28, 12, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#d97706";
-  ctx.beginPath();
-  ctx.ellipse(0, 22, 25, 9, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#78350f";
-  ctx.beginPath();
-  ctx.ellipse(0, 21, 22, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(-16, 17, 5, 0, Math.PI * 2);
-  ctx.arc(16, 17, 5, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-}
-
-function drawHeart(x, y, size, isFilled) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.beginPath();
-  const topCurveHeight = size * 0.3;
-  ctx.moveTo(0, topCurveHeight);
-  ctx.bezierCurveTo(-size / 2, -topCurveHeight, -size, size / 3, 0, size);
-  ctx.bezierCurveTo(size, size / 3, size / 2, -topCurveHeight, 0, topCurveHeight);
-  ctx.closePath();
-
-  if (isFilled) {
-    ctx.fillStyle = "#ef4444";
-    ctx.shadowColor = "rgba(239, 68, 68, 0.5)";
-    ctx.shadowBlur = 6;
-    ctx.fill();
-  } else {
-    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-// 타이머 아이콘 (스톱워치)
-function drawTimerIcon(x, y, radius, color) {
-  ctx.save();
-  ctx.translate(x, y);
-
-  // 상단 버튼
-  ctx.fillStyle = color;
-  ctx.fillRect(-2, -radius - 4, 4, 3);
-
-  // 원형 몸체 테두리
-  ctx.beginPath();
-  ctx.arc(0, 0, radius, 0, Math.PI * 2);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.2;
-  ctx.stroke();
-
-  // 바늘
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(0, -radius * 0.55);
-  ctx.moveTo(0, 0);
-  ctx.lineTo(radius * 0.45, 0);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  ctx.stroke();
-
-  ctx.restore();
-}
-
-function update() {
-  if (!isStarted || gameOver) return;
-
-  frameCount++;
-  if (frameCount % 40 === 0) spawnItem();
-
-  for (let i = items.length - 1; i >= 0; i--) {
-    const it = items[i];
-    it.y += it.speed;
-    it.rot += it.rotSpeed;
-
-    if (checkCollision(it, player)) {
-      if (it.type === "chestnut") {
-        lives--;
-        if (lives <= 0) endGame("lives");
-      } else {
-        score += it.score;
-      }
-      items.splice(i, 1);
-      continue;
-    }
-
-    if (it.y > canvas.height + 30) {
-      items.splice(i, 1);
-    }
-  }
-}
-
-function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 배경
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  bgGrad.addColorStop(0, "#090918");
-  bgGrad.addColorStop(0.5, "#141735");
-  bgGrad.addColorStop(1, "#261d3f");
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  stars.forEach(s => {
-    s.alpha += s.speed;
-    const curAlpha = (Math.sin(s.alpha) + 1) / 2 * 0.7 + 0.3;
-    ctx.fillStyle = `rgba(255, 255, 255, ${curAlpha})`;
-    ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // 보름달
-  const moonX = canvas.width * 0.72;
-  const moonY = 120;
-  const moonR = 52;
-
-  const glow = ctx.createRadialGradient(moonX, moonY, moonR * 0.5, moonX, moonY, moonR * 2.2);
-  glow.addColorStop(0, "rgba(254, 240, 138, 0.4)");
-  glow.addColorStop(0.6, "rgba(253, 224, 71, 0.1)");
-  glow.addColorStop(1, "transparent");
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR * 2.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  const moonGrad = ctx.createRadialGradient(moonX - 10, moonY - 10, 5, moonX, moonY, moonR);
-  moonGrad.addColorStop(0, "#fffbeb");
-  moonGrad.addColorStop(0.85, "#fef08a");
-  moonGrad.addColorStop(1, "#facc15");
-  ctx.fillStyle = moonGrad;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "rgba(202, 138, 4, 0.14)";
-  ctx.beginPath();
-  ctx.arc(moonX - 15, moonY - 10, 11, 0, Math.PI * 2);
-  ctx.arc(moonX + 18, moonY + 12, 14, 0, Math.PI * 2);
-  ctx.arc(moonX - 5, moonY + 22, 9, 0, Math.PI * 2);
-  ctx.fill();
-
-  // 언덕 및 소나무
-  ctx.fillStyle = "#161b33";
-  ctx.beginPath();
-  ctx.arc(80, canvas.height + 140, 240, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = "#0f1124";
-  ctx.beginPath();
-  ctx.arc(320, canvas.height + 160, 260, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawPineTree(55, canvas.height - 40, 0.85);
-  drawPineTree(120, canvas.height - 25, 1.15);
-  drawPineTree(365, canvas.height - 35, 0.95);
-
-  ctx.fillStyle = "#0a0c1a";
-  ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
-
-  items.forEach(it => {
-    if (it.type === "chestnut") {
-      drawChestnutBurr(it.x, it.y, it.radius, it.rot);
-    } else {
-      drawSongpyeon(it.x, it.y, it.radius, it.color, it.edgeColor, it.rot);
-    }
-  });
-
-  drawRabbit(player.x, player.y, player.width, player.height);
-
-  // --- 상단 HUD ---
-  const hudY = 36;
-
-  // 1. 점수 (좌측)
-  ctx.fillStyle = "#fef08a";
-  ctx.font = "20px 'Jua', sans-serif";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText(`점수  ${score}`, 20, hudY);
-
-  // 2. 타이머 (완전한 수학적 정중앙 정렬)
-  const timerText = `${timeLeft}초`;
-  ctx.font = "21px 'Jua', sans-serif";
-  const timerTextWidth = ctx.measureText(timerText).width;
-  const iconRadius = 7.5;
-  const iconTextGap = 7;
-  const totalTimerWidth = (iconRadius * 2) + iconTextGap + timerTextWidth;
-
-  // 전체 블록의 시작 X좌표 계산
-  const timerStartX = (canvas.width / 2) - (totalTimerWidth / 2);
-  const iconCenterX = timerStartX + iconRadius;
-  const textStartX = timerStartX + (iconRadius * 2) + iconTextGap;
-
-  let timerColor = "#ffffff";
-  if (timeLeft <= 10) {
-    timerColor = (Math.floor(frameCount / 15) % 2 === 0) ? "#f87171" : "#ffffff";
-  }
-
-  // 아이콘 및 텍스트 렌더링
-  drawTimerIcon(iconCenterX, hudY, iconRadius, timerColor);
-  ctx.fillStyle = timerColor;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText(timerText, textStartX, hudY + 1);
-
-  // 3. 생명 하트 (우측)
-  const heartSpacing = 22;
-  const heartBaseX = canvas.width - 76;
-  const heartBaseY = hudY - 7;
-  for (let i = 0; i < 3; i++) {
-    drawHeart(heartBaseX + (i * heartSpacing), heartBaseY, 9, i < lives);
-  }
-
-  // --- 1. 시작 대기 화면 ---
-  if (!isStarted) {
-    ctx.fillStyle = "rgba(10, 10, 25, 0.84)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    ctx.fillStyle = "#fde047";
-    ctx.font = "34px 'Jua', sans-serif";
-    ctx.fillText("달토끼의 파티 준비", canvas.width / 2, canvas.height / 2 - 80);
-
-    ctx.fillStyle = "#e2e8f0";
-    ctx.font = "18px 'Jua', sans-serif";
-    ctx.fillText("화면을 손가락으로 밀어 토끼를 움직이세요!", canvas.width / 2, canvas.height / 2 - 35);
-
-    ctx.fillStyle = "#fca5a5";
-    ctx.font = "17px 'Jua', sans-serif";
-    ctx.fillText("주의! 밤송이는 피하고 송편만 담아요", canvas.width / 2, canvas.height / 2 - 2);
-
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(startBtn.x, startBtn.y, startBtn.width, startBtn.height, 26);
-    ctx.fillStyle = "#eab308";
-    ctx.shadowColor = "rgba(234, 179, 8, 0.45)";
-    ctx.shadowBlur = 12;
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#1e1b4b";
-    ctx.font = "22px 'Jua', sans-serif";
-    ctx.fillText("게임 시작", canvas.width / 2, startBtn.y + startBtn.height / 2);
-    ctx.restore();
-
+function renderRankingTable() {
+  const ranks = getRankings();
+  const listEl = document.getElementById('ranking-list');
+  listEl.innerHTML = '';
+  if (ranks.length === 0) {
+    listEl.innerHTML = '<div style="padding:15px; color:#888;">아직 등록된 기록이 없습니다!</div>';
     return;
   }
-
-  // --- 2. 게임 오버 화면 ---
-  if (gameOver) {
-    ctx.fillStyle = "rgba(10, 10, 25, 0.86)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    ctx.fillStyle = "#fde047";
-    ctx.font = "32px 'Jua', sans-serif";
-    const titleText = gameOverReason === "time" ? "시간이 다 되었어요!" : "밤송이에 찔렸어요!";
-    ctx.fillText(titleText, canvas.width / 2, canvas.height / 2 - 45);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "23px 'Jua', sans-serif";
-    ctx.fillText(`수확한 송편 점수 : ${score}점`, canvas.width / 2, canvas.height / 2 + 5);
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(restartBtn.x, restartBtn.y, restartBtn.width, restartBtn.height, 25);
-    ctx.fillStyle = "#eab308";
-    ctx.shadowColor = "rgba(234, 179, 8, 0.4)";
-    ctx.shadowBlur = 10;
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#1e1b4b";
-    ctx.font = "21px 'Jua', sans-serif";
-    ctx.fillText("다시 도전하기", canvas.width / 2, restartBtn.y + restartBtn.height / 2);
-    ctx.restore();
-  }
+  ranks.forEach((r, idx) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <span class="rank-num">${idx + 1}위</span>
+      <span class="rank-name">${r.name}</span>
+      <span class="rank-pts">${r.score}점</span>
+    `;
+    listEl.appendChild(row);
+  });
 }
 
-function gameLoop() {
-  update();
-  render();
-  requestAnimationFrame(gameLoop);
-}
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('restart-btn').addEventListener('click', startGame);
 
-document.fonts.ready.then(() => {
-  gameLoop();
+document.getElementById('open-rank-btn').addEventListener('click', () => {
+  renderRankingTable();
+  document.getElementById('ranking-modal').style.display = 'flex';
+});
+
+document.getElementById('close-rank-btn').addEventListener('click', () => {
+  document.getElementById('ranking-modal').style.display = 'none';
+});
+
+document.getElementById('save-score-btn').addEventListener('click', () => {
+  const name = document.getElementById('player-name').value.trim();
+  saveRanking(name, score);
+  alert('랭킹에 등록되었습니다!');
+  renderRankingTable();
+  document.getElementById('gameover-modal').style.display = 'none';
+  document.getElementById('ranking-modal').style.display = 'flex';
+});
+
+document.getElementById('download-card-btn').addEventListener('click', () => {
+  const captureArea = document.getElementById('capture-area');
+  html2canvas(captureArea, { backgroundColor: null }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `달토끼_송편기록_${score}점.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
 });
 </script>
 </body>
