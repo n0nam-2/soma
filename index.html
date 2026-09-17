@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>달토끼 송편 잡기</title>
   
-  <!-- Firebase SDK 추가 (호환성 버전) - Realtime Database로 변경 -->
+  <!-- Firebase SDK 추가 (호환성 버전) - Realtime Database -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
@@ -293,8 +293,9 @@
         <input type="text" id="player-name" class="name-input" placeholder="이름 입력 (최대 6자)" maxlength="6">
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
-      <div style="margin-top: 12px; display: flex; justify-content: center; gap: 10px; padding: 0 10px;">
-        <button class="btn-sub" id="restart-btn" style="flex: 1; margin: 0;">다시하기</button>
+      <div style="margin-top: 12px;">
+        <!-- 버튼 너비 통일 -->
+        <button class="btn-sub" id="restart-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">다시하기</button>
       </div>
     </div>
   </div>
@@ -304,9 +305,9 @@
     <div class="dialog-box">
       <div style="font-size:1.6rem; color:#e7526f; margin-bottom:10px;">👑 명예의 전당 랭킹</div>
       <div class="ranking-table" id="ranking-list"></div>
-      <div style="display: flex; gap: 10px; justify-content: center;">
-        <button class="btn-sub" id="rank-main-btn" style="flex: 1; font-size:1rem; padding:7px 18px; margin: 0;">🏠 메인으로</button>
-        <button class="btn-pink" id="close-rank-btn" style="flex: 1; font-size:1rem; padding:7px 18px; margin: 0;">닫기</button>
+      <div style="margin-top: 12px;">
+        <!-- 닫기 버튼 삭제 및 메인으로 버튼 넓이 통일 -->
+        <button class="btn-sub" id="rank-main-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">🏠 메인으로</button>
       </div>
     </div>
   </div>
@@ -333,15 +334,16 @@ const db = firebase.database();
 
 
 /* ==========================================================
-   1. 오디오 합성기 (BGM & 효과음)
+   1. 오디오 합성기 (BGM & 효과음) - 피버타임 연동 강화
    ========================================================== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
+let bgmTimeout = null;
+let bgmStep = 0;
 
 function initAudio() {
   if (!audioCtx) {
     audioCtx = new AudioContext();
-    startBGM();
   }
 }
 
@@ -373,23 +375,36 @@ function playSound(type) {
 }
 
 function startBGM() {
+  if (bgmTimeout) clearTimeout(bgmTimeout);
+  bgmStep = 0;
+  playBGMNote();
+}
+
+// BGM 템포 조절 로직 적용
+function playBGMNote() {
+  if (gameState !== 'PLAYING') return;
+
   const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-  let step = 0;
-  setInterval(() => {
-    if (gameState !== 'PLAYING') return;
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = notes[step % notes.length];
-    gain.gain.setValueAtTime(0.045, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.28);
-    step = (step + 1) % 12;
-  }, 310);
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  osc.type = 'triangle';
+  osc.frequency.value = notes[bgmStep % notes.length];
+  
+  // 피버 타임일 때 재생 딜레이와 소리 지속 시간을 단축 (긴박함 상승)
+  const duration = fever ? 0.14 : 0.28;
+  const delay = fever ? 150 : 310;
+  
+  gain.gain.setValueAtTime(0.045, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  osc.stop(now + duration);
+  
+  bgmStep = (bgmStep + 1) % 12;
+  bgmTimeout = setTimeout(playBGMNote, delay);
 }
 
 /* ==========================================================
@@ -686,8 +701,17 @@ const particles = [];
 const redStars = []; 
 
 function spawnRice() {
-  const isBad = Math.random() < 0.28;
-  let riceType = isBad ? 'purple' : (Math.random() < 0.5 ? 'white' : 'pink');
+  // 흰색 2 : 분홍색 0.5 : 보라색 1 비율 생성 (총합 3.5)
+  const rand = Math.random() * 3.5;
+  let riceType;
+  
+  if (rand < 1) {           // 1.0 비율 (보라색 콩송편)
+    riceType = 'purple';
+  } else if (rand < 1.5) {  // 0.5 비율 (분홍색 꿀송편)
+    riceType = 'pink';
+  } else {                  // 2.0 비율 (흰색 꿀송편)
+    riceType = 'white';
+  }
 
   rices.push({
     x: Math.random() * (width - 70) + 35,
@@ -1059,6 +1083,8 @@ requestAnimationFrame(gameLoop);
    ========================================================== */
 function startGame() {
   initAudio();
+  startBGM(); // 게임 시작 시 BGM 강제 재시작 (초기화)
+  
   gameState = 'PLAYING';
   score = 0;
   timeLeft = 60;
@@ -1144,7 +1170,6 @@ async function renderRankingTable() {
   listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">데이터를 불러오는 중...</div>';
   
   try {
-    // Realtime Database는 오름차순 조회를 기본으로 하므로 점수로 가져온 뒤 역순 정렬합니다.
     const snapshot = await db.ref('rankings')
       .orderByChild('score')
       .limitToLast(10)
@@ -1191,10 +1216,6 @@ document.getElementById('rank-main-btn').addEventListener('click', () => {
 document.getElementById('open-rank-btn').addEventListener('click', () => {
   renderRankingTable();
   document.getElementById('ranking-modal').style.display = 'flex';
-});
-
-document.getElementById('close-rank-btn').addEventListener('click', () => {
-  document.getElementById('ranking-modal').style.display = 'none';
 });
 
 document.getElementById('save-score-btn').addEventListener('click', async () => {
