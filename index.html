@@ -294,7 +294,6 @@
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
       <div style="margin-top: 12px;">
-        <!-- 버튼 너비 통일 -->
         <button class="btn-sub" id="restart-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">다시하기</button>
       </div>
     </div>
@@ -306,8 +305,7 @@
       <div style="font-size:1.6rem; color:#e7526f; margin-bottom:10px;">👑 명예의 전당 랭킹</div>
       <div class="ranking-table" id="ranking-list"></div>
       <div style="margin-top: 12px;">
-        <!-- 닫기 버튼 삭제 및 메인으로 버튼 넓이 통일 -->
-        <button class="btn-sub" id="rank-main-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">🏠 메인으로</button>
+        <button class="btn-sub" id="rank-main-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">메인으로</button>
       </div>
     </div>
   </div>
@@ -334,7 +332,7 @@ const db = firebase.database();
 
 
 /* ==========================================================
-   1. 오디오 합성기 (BGM & 효과음) - 피버타임 연동 강화
+   1. 오디오 합성기 (플래시 게임풍 레트로 8비트 BGM)
    ========================================================== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
@@ -380,30 +378,47 @@ function startBGM() {
   playBGMNote();
 }
 
-// BGM 템포 조절 로직 적용
+// 8비트 아르페지오 신스 (플래시 게임 감성)
 function playBGMNote() {
   if (gameState !== 'PLAYING') return;
 
-  const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25];
-  const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
+  // 신나고 통통 튀는 아르페지오 멜로디 배열
+  const melody = [
+    523.25, 659.25, 783.99, 659.25, 
+    523.25, 659.25, 783.99, 659.25,
+    587.33, 698.46, 880.00, 698.46, 
+    587.33, 698.46, 880.00, 698.46,
+    493.88, 587.33, 783.99, 587.33, 
+    493.88, 587.33, 783.99, 587.33,
+    523.25, 392.00, 329.63, 392.00, 
+    523.25, 0, 0, 0
+  ];
   
-  osc.type = 'triangle';
-  osc.frequency.value = notes[bgmStep % notes.length];
+  const note = melody[bgmStep % melody.length];
   
-  // 피버 타임일 때 재생 딜레이와 소리 지속 시간을 단축 (긴박함 상승)
-  const duration = fever ? 0.14 : 0.28;
-  const delay = fever ? 150 : 310;
+  // 피버 타임 시 딜레이와 길이를 줄여 긴박함, 템포 상승 연출
+  const delay = fever ? 85 : 140; 
+  const duration = fever ? 0.07 : 0.11;
+
+  if (note !== 0) {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    // 'square' 파형으로 전형적인 8비트/레트로 사운드 구현
+    osc.type = 'square';
+    osc.frequency.value = note;
+    
+    gain.gain.setValueAtTime(0.035, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+  }
   
-  gain.gain.setValueAtTime(0.045, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start(now);
-  osc.stop(now + duration);
-  
-  bgmStep = (bgmStep + 1) % 12;
+  bgmStep++;
   bgmTimeout = setTimeout(playBGMNote, delay);
 }
 
