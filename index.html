@@ -263,7 +263,6 @@
         </div>
         <div class="rice-guide-row">
           <span class="mini-rice-icon icon-purple"></span>
-          <!-- 팥송편 -> 콩송편 변경 -->
           <span style="color:#6d3596; font-weight:bold;">콩송편: -10점</span>
         </div>
       </div>
@@ -384,9 +383,8 @@ let score = 0;
 let timeLeft = 60;
 let timerInterval = null;
 let fever = false;
-let feverTransition = 0; // Fade 효과를 위한 변수
+let feverTransition = 0;
 
-// 토끼 변수
 const rabbit = {
   x: width / 2,
   y: height - 120,
@@ -427,10 +425,9 @@ const clouds = [
 ];
 
 /* ==========================================================
-   3. 배경 렌더링 (밤하늘, 달, 소나무)
+   3. 배경 렌더링 (밤하늘, 달, 산, 소나무)
    ========================================================== */
 function drawNightSky(t) {
-  // 1. 기본 밤하늘 (평소 배경 하늘색 항상 유지)
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
   skyGrad.addColorStop(0, '#152238');
   skyGrad.addColorStop(0.5, '#283b58');
@@ -441,7 +438,6 @@ function drawNightSky(t) {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // 2. 별
   stars.forEach((s) => {
     const alpha = 0.35 + Math.abs(Math.sin(t * s.twinkleSpeed + s.twinkleOffset)) * 0.65;
     ctx.save();
@@ -456,7 +452,6 @@ function drawNightSky(t) {
     ctx.restore();
   });
 
-  // 3. 달 항상 표시
   ctx.save();
   const moonX = width - 95;
   const moonY = 110;
@@ -481,20 +476,35 @@ function drawNightSky(t) {
   ctx.fill();
   ctx.restore();
 
-  // 4. 구름
   clouds.forEach(c => {
     c.x += c.speed;
     if (c.x > width + 100) c.x = -120;
     drawCloud(c.x, c.y, c.scale);
   });
 
-  // 5. 나무 배치 (3그루)
-  drawPineTree(0, 0, 1, false);             // 좌측 원본
-  drawPineTree(90, 30, 0.65, false);        // 좌측 약간 뒤
-  drawPineTree(width + 20, 10, 0.85, true); // 우측 (좌우반전)
-
-  // 6. 땅
   const groundY = height - 68;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(60, 85, 130, 0.45)';
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(0, groundY - 130);
+  ctx.bezierCurveTo(width * 0.3, groundY - 190, width * 0.6, groundY - 90, width, groundY - 150);
+  ctx.lineTo(width, groundY);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(35, 55, 90, 0.6)';
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  ctx.lineTo(0, groundY - 80);
+  ctx.bezierCurveTo(width * 0.4, groundY - 120, width * 0.7, groundY - 50, width, groundY - 100);
+  ctx.lineTo(width, groundY);
+  ctx.fill();
+  ctx.restore();
+
+  drawPineTree(0, 0, 1, false);
+  drawPineTree(90, 30, 0.65, false);
+
   ctx.fillStyle = '#d5af72';
   ctx.fillRect(0, groundY, width, 68);
   ctx.fillStyle = '#b38f56';
@@ -504,11 +514,9 @@ function drawNightSky(t) {
   drawFlower(width - 55, groundY - 3, '#ffa347');
   drawFlower(width - 95, groundY + 10, '#ffffff');
 
-  // ⭐ 7. 피버 타임 붉은 그라데이션 오버레이 (Fade In)
   if (feverTransition > 0) {
     ctx.save();
     const overlayGrad = ctx.createLinearGradient(0, 0, 0, height);
-    // feverTransition 값에 따라 투명도가 서서히 증가하여 자연스럽게 물듦
     overlayGrad.addColorStop(0, `rgba(200, 20, 50, ${0.45 * feverTransition})`);
     overlayGrad.addColorStop(0.5, `rgba(220, 50, 80, ${0.35 * feverTransition})`);
     overlayGrad.addColorStop(1, `rgba(255, 100, 120, ${0.45 * feverTransition})`);
@@ -531,7 +539,6 @@ function drawCloud(cx, cy, s) {
   ctx.restore();
 }
 
-// 위치, 스케일, 좌우반전을 조절할 수 있도록 파라미터 추가
 function drawPineTree(tx = 0, ty = 0, scale = 1, flip = false) {
   ctx.save();
   ctx.translate(tx, ty);
@@ -591,10 +598,11 @@ function drawFlower(fx, fy, color) {
 }
 
 /* ==========================================================
-   4. 송편 생성 및 렌더링
+   4. 오브젝트 생성 및 렌더링 (송편, 불씨, 파티클)
    ========================================================== */
 const rices = [];
 const particles = [];
+const embers = []; // 피버 타임 불씨 애니메이션용 배열
 
 function spawnRice() {
   const isBad = Math.random() < 0.28;
@@ -610,6 +618,17 @@ function spawnRice() {
   });
 }
 
+function spawnEmber() {
+  embers.push({
+    x: Math.random() * width,
+    y: -10,
+    speedY: Math.random() * 2 + 4,
+    size: Math.random() * 3 + 2,
+    color: Math.random() > 0.5 ? '#ffae00' : '#ff4d00', // 노란빛 또는 붉은빛
+    offset: Math.random() * 100 // 일렁임 타이밍 차이를 위한 오프셋
+  });
+}
+
 function addEatParticle(x, y, text, color) {
   particles.push({ x, y, text, color, alpha: 1, vy: -2 });
 }
@@ -620,12 +639,10 @@ function drawSongpyeon(r) {
   ctx.rotate(r.angle);
   
   ctx.beginPath();
-  // 송편을 귀여운 만두/반달 모양(위가 볼록하고 아래가 둥근형태)으로 수정
   ctx.arc(0, 2, r.size, Math.PI, 2 * Math.PI, false);
   ctx.quadraticCurveTo(0, r.size * 0.5 + 2, -r.size, 2);
   ctx.closePath();
 
-  // 입체감을 위한 방사형 그라데이션 (윤기 베이스)
   const grad = ctx.createRadialGradient(-r.size * 0.3, -r.size * 0.3, r.size * 0.1, 0, 0, r.size);
   if (r.type === 'white') {
     grad.addColorStop(0, '#ffffff');
@@ -649,13 +666,11 @@ function drawSongpyeon(r) {
   ctx.fill();
   ctx.stroke();
 
-  // 젤리/유리 같은 큰 윤기 (좌측 상단 곡선)
   ctx.beginPath();
   ctx.ellipse(-r.size * 0.35, -r.size * 0.3, r.size * 0.3, r.size * 0.15, -0.2, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.fill();
 
-  // 작은 반사광 (우측 하단)
   ctx.beginPath();
   ctx.ellipse(r.size * 0.4, r.size * 0.1, r.size * 0.1, r.size * 0.05, -0.4, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
@@ -671,21 +686,18 @@ function drawPlayer(x, y) {
   ctx.save();
   ctx.translate(x, y);
 
-  // 피버 모드일 때 토끼 뒤에 불꽃 일러스트 (Fade In 적용)
   if (feverTransition > 0) {
     const t = Date.now() / 150;
     ctx.save();
-    ctx.globalAlpha = feverTransition; // 불꽃도 자연스럽게 서서히 나타남
+    ctx.globalAlpha = feverTransition; 
     
     const drawFlame = (color, w, h, offset) => {
       ctx.fillStyle = color;
       ctx.beginPath();
       ctx.moveTo(0, 45); 
-      // 불꽃 좌측 
       ctx.bezierCurveTo(-w*1.2, 45, -w*1.5, -10, -w*0.8, -30 + Math.sin(t + offset) * 10);
       ctx.bezierCurveTo(-w*0.5, -15, -w*0.4, -25, -w*0.3, -h*0.75 + Math.cos(t * 1.3) * 10);
       ctx.bezierCurveTo(-w*0.1, -h*0.4, -w*0.05, -h*0.5, 0, -h + Math.sin(t * 1.5) * 12);
-      // 불꽃 우측 
       ctx.bezierCurveTo(w*0.05, -h*0.5, w*0.1, -h*0.4, w*0.3, -h*0.75 + Math.cos(t * 1.1) * 10);
       ctx.bezierCurveTo(w*0.4, -25, w*0.5, -15, w*0.8, -30 + Math.sin(t * 1.4) * 10);
       ctx.bezierCurveTo(w*1.5, -10, w*1.2, 45, 0, 45);
@@ -861,9 +873,12 @@ function gameLoop(timestamp) {
   drawNightSky(timestamp * 0.001);
 
   if (gameState === 'PLAYING') {
-    // Fade 효과 계산
     if (fever) {
       feverTransition = Math.min(1, feverTransition + 0.015);
+      // 피버 타임일 때 작은 불씨들 무작위 생성 (점수에 영향 없음)
+      if (Math.random() < 0.35) {
+        spawnEmber();
+      }
     } else {
       feverTransition = Math.max(0, feverTransition - 0.05);
     }
@@ -880,6 +895,28 @@ function gameLoop(timestamp) {
       lastSpawn = timestamp;
     }
 
+    // 불씨 렌더링 (배경 이펙트 역할)
+    for (let i = embers.length - 1; i >= 0; i--) {
+      const e = embers[i];
+      e.y += e.speedY;
+      // 좌우로 부드럽게 일렁이도록 x 좌표 변경
+      e.x += Math.sin(timestamp * 0.003 + e.offset) * 1.5;
+
+      ctx.save();
+      // 깜빡이는 효과
+      ctx.globalAlpha = 0.4 + Math.abs(Math.sin(timestamp * 0.005 + e.offset)) * 0.6;
+      ctx.fillStyle = e.color;
+      ctx.shadowColor = e.color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      if (e.y > height + 20) embers.splice(i, 1);
+    }
+
+    // 송편 렌더링 및 충돌 판정
     for (let i = rices.length - 1; i >= 0; i--) {
       const r = rices[i];
       r.y += r.speed;
@@ -909,6 +946,7 @@ function gameLoop(timestamp) {
       if (r.y > height + 40) rices.splice(i, 1);
     }
 
+    // 파티클(점수 텍스트) 렌더링
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.y += p.vy;
@@ -945,9 +983,10 @@ function startGame() {
   score = 0;
   timeLeft = 60;
   fever = false;
-  feverTransition = 0; // 시작 시 Fade 초기화
+  feverTransition = 0;
   rices.length = 0;
   particles.length = 0;
+  embers.length = 0; // 시작 시 불씨 배열 초기화
   rabbit.x = width / 2;
   rabbit.targetX = width / 2;
   rabbit.eatTimer = 0;
