@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>달토끼 송편 잡기</title>
+  
+  <!-- Firebase SDK 추가 (호환성 버전) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
 
@@ -182,9 +187,16 @@
       transition: 0.1s;
     }
 
-    .btn-pink:active {
+    .btn-pink:active:not(:disabled) {
       transform: translateY(3px);
       box-shadow: 0 1px 0 #632230;
+    }
+
+    .btn-pink:disabled {
+      background: #ccc;
+      border-color: #999;
+      box-shadow: 0 4px 0 #999;
+      cursor: not-allowed;
     }
 
     .btn-sub {
@@ -254,11 +266,10 @@
       <div class="info-card">
         <p style="color:#5e3d23; font-size:0.95rem; margin-bottom:8px;">토끼에게 맛있는 꿀송편을 먹여 주세요!</p>
         <div class="rice-guide-row">
-          <div style="display:flex; gap:3px;">
-            <span class="mini-rice-icon icon-white"></span>
-            <span class="mini-rice-icon icon-pink"></span>
-          </div>
-          <span style="color:#c9325e; font-weight:bold;">꿀송편: +10점</span>
+          <span class="mini-rice-icon icon-white"></span>
+          <span style="color:#c9325e; font-weight:bold;">+10점</span>
+          <span class="mini-rice-icon icon-pink" style="margin-left: 8px;"></span>
+          <span style="color:#ff688c; font-weight:bold;">+20점</span>
         </div>
         <div class="rice-guide-row">
           <span class="mini-rice-icon icon-purple"></span>
@@ -283,7 +294,6 @@
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
       <div style="margin-top: 12px; display: flex; justify-content: center; gap: 10px; padding: 0 10px;">
-        <button class="btn-sub" id="main-btn" style="flex: 1; margin: 0;">🏠 메인으로</button>
         <button class="btn-sub" id="restart-btn" style="flex: 1; margin: 0;">다시하기</button>
       </div>
     </div>
@@ -294,12 +304,34 @@
     <div class="dialog-box">
       <div style="font-size:1.6rem; color:#e7526f; margin-bottom:10px;">👑 명예의 전당 랭킹</div>
       <div class="ranking-table" id="ranking-list"></div>
-      <button class="btn-pink" id="close-rank-btn" style="font-size:1rem; padding:7px 18px;">닫기</button>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn-sub" id="rank-main-btn" style="flex: 1; font-size:1rem; padding:7px 18px; margin: 0;">🏠 메인으로</button>
+        <button class="btn-pink" id="close-rank-btn" style="flex: 1; font-size:1rem; padding:7px 18px; margin: 0;">닫기</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+/* ==========================================================
+   0. Firebase 초기화 및 연동 (사용자 설정 적용 완료)
+   ========================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDUu0cuuZYcZrMVsMbLrtBkVwqyFu5ewnk",
+  authDomain: "koko-e900d.firebaseapp.com",
+  databaseURL: "https://koko-e900d-default-rtdb.firebaseio.com",
+  projectId: "koko-e900d",
+  storageBucket: "koko-e900d.firebasestorage.app",
+  messagingSenderId: "1038961737213",
+  appId: "1:1038961737213:web:65202bc701e09a76452d94",
+  measurementId: "G-Z4W6KJGNDL"
+};
+
+// Firebase 초기화
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+
 /* ==========================================================
    1. 오디오 합성기 (BGM & 효과음)
    ========================================================== */
@@ -409,7 +441,6 @@ function handleTouch(e) {
   rabbit.targetX = touch.clientX - rect.left;
 }
 
-// 배경에 가득 차도록 별 개수 증가 (85개)
 const stars = Array.from({ length: 85 }, () => ({
   x: Math.random() * 500,
   y: Math.random() * 600,
@@ -418,7 +449,6 @@ const stars = Array.from({ length: 85 }, () => ({
   twinkleOffset: Math.random() * Math.PI * 2
 }));
 
-// 구름 개수 증가 및 화면 전역에 배치
 const clouds = [
   { x: 30, y: 70, scale: 0.9, speed: 0.25 },
   { x: 220, y: 120, scale: 1.15, speed: 0.18 },
@@ -428,7 +458,6 @@ const clouds = [
   { x: 380, y: 250, scale: 0.6, speed: 0.12 }
 ];
 
-// 꽃밭을 위한 꽃 데이터 생성
 const fieldFlowers = [];
 const flowerColors = ['#ff6e8a', '#ffa347', '#ffffff', '#ffb3c6', '#a26bb9', '#ffd700'];
 for(let i = 0; i < 35; i++) { 
@@ -442,10 +471,9 @@ for(let i = 0; i < 35; i++) {
 fieldFlowers.sort((a, b) => a.yOffset - b.yOffset);
 
 /* ==========================================================
-   3. 배경 렌더링 (밤하늘, 부드러운 산, 소나무, 꽃밭)
+   3. 배경 렌더링
    ========================================================== */
 function drawNightSky(t) {
-  // 밤하늘 배경
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
   skyGrad.addColorStop(0, '#152238');
   skyGrad.addColorStop(0.5, '#283b58');
@@ -456,7 +484,6 @@ function drawNightSky(t) {
   ctx.fillStyle = skyGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // 별
   stars.forEach((s) => {
     const alpha = 0.35 + Math.abs(Math.sin(t * s.twinkleSpeed + s.twinkleOffset)) * 0.65;
     ctx.save();
@@ -471,7 +498,6 @@ function drawNightSky(t) {
     ctx.restore();
   });
 
-  // 달
   ctx.save();
   const moonX = width - 95;
   const moonY = 110;
@@ -496,7 +522,6 @@ function drawNightSky(t) {
   ctx.fill();
   ctx.restore();
 
-  // 구름
   clouds.forEach(c => {
     c.x += c.speed;
     if (c.x > width + 100) c.x = -120;
@@ -506,8 +531,6 @@ function drawNightSky(t) {
   const groundY = height - 68;
 
   ctx.save();
-  
-  // 산 Layer 1 (가장 뒤)
   const grad1 = ctx.createLinearGradient(0, groundY - 240, 0, groundY - 100);
   grad1.addColorStop(0, 'rgba(58, 84, 117, 0.9)'); 
   grad1.addColorStop(1, 'rgba(82, 110, 145, 0.2)'); 
@@ -520,7 +543,6 @@ function drawNightSky(t) {
   ctx.lineTo(width, groundY);
   ctx.fill();
 
-  // 산 Layer 2 (중간)
   const grad2 = ctx.createLinearGradient(0, groundY - 220, 0, groundY - 80);
   grad2.addColorStop(0, 'rgba(45, 69, 99, 0.95)');
   grad2.addColorStop(1, 'rgba(55, 83, 117, 0.3)');
@@ -533,7 +555,6 @@ function drawNightSky(t) {
   ctx.lineTo(width, groundY);
   ctx.fill();
 
-  // 산 Layer 3 (가장 앞)
   const grad3 = ctx.createLinearGradient(0, groundY - 180, 0, groundY - 50);
   grad3.addColorStop(0, 'rgba(31, 52, 80, 1)');
   grad3.addColorStop(1, 'rgba(38, 62, 92, 0.5)');
@@ -548,16 +569,13 @@ function drawNightSky(t) {
 
   ctx.restore();
 
-  // 좌측 상단 소나무 가지
-  drawPineBranch(-10, -10, 1.25);
+  drawDetailedPineBranch(-15, -15, 1.25);
 
-  // 바닥 면 렌더링
   ctx.fillStyle = '#425c27';
   ctx.fillRect(0, groundY, width, 68);
   ctx.fillStyle = '#2d4219';
   ctx.fillRect(0, groundY, width, 6);
 
-  // 꽃밭 렌더링
   fieldFlowers.forEach(f => {
     drawFlower(width * f.x, groundY + f.yOffset, f.color, f.scale);
   });
@@ -575,32 +593,38 @@ function drawNightSky(t) {
   }
 }
 
-function drawPineBranch(tx, ty, scale) {
+function drawDetailedPineBranch(tx, ty, scale) {
   ctx.save();
   ctx.translate(tx, ty);
   ctx.scale(scale, scale);
   
-  // 소나무 가지 뼈대
-  ctx.strokeStyle = '#2b190f';
-  ctx.lineWidth = 14;
+  ctx.strokeStyle = '#3d2314';
+  ctx.lineWidth = 18;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(-10, -10);
-  ctx.quadraticCurveTo(50, 20, 130, 60);
+  ctx.moveTo(-10, -5);
+  ctx.quadraticCurveTo(60, 25, 150, 75);
   ctx.stroke();
 
+  ctx.strokeStyle = '#5c3a21';
+  ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(-5, -2);
+  ctx.quadraticCurveTo(55, 23, 140, 70);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#3d2314';
   ctx.lineWidth = 10;
   ctx.beginPath();
-  ctx.moveTo(30, 10);
-  ctx.quadraticCurveTo(60, 60, 80, 110);
+  ctx.moveTo(50, 35);
+  ctx.quadraticCurveTo(90, 70, 110, 110);
   ctx.stroke();
 
-  // 소나무 잎 덩어리
-  drawPineNeedles(20, 10, 40);
-  drawPineNeedles(70, 40, 35);
-  drawPineNeedles(120, 60, 30);
-  drawPineNeedles(80, 100, 28);
-  drawPineNeedles(40, 60, 32);
+  drawPineNeedles(25, 10, 42);
+  drawPineNeedles(80, 45, 38);
+  drawPineNeedles(135, 75, 32);
+  drawPineNeedles(95, 100, 28);
+  drawPineNeedles(45, 60, 34);
   
   ctx.restore();
 }
@@ -635,11 +659,9 @@ function drawFlower(fx, fy, color, scale = 1) {
   ctx.translate(fx, fy);
   ctx.scale(scale, scale);
   
-  // 꽃대
   ctx.fillStyle = '#3a611c';
   ctx.fillRect(-1.5, 0, 3, 14);
   
-  // 꽃잎
   ctx.fillStyle = color;
   for (let i = 0; i < 5; i++) {
     const ang = (i * Math.PI * 2) / 5;
@@ -648,7 +670,6 @@ function drawFlower(fx, fy, color, scale = 1) {
     ctx.fill();
   }
   
-  // 꽃술 (중앙)
   ctx.fillStyle = '#ffdf40';
   ctx.beginPath();
   ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
@@ -658,7 +679,7 @@ function drawFlower(fx, fy, color, scale = 1) {
 }
 
 /* ==========================================================
-   4. 오브젝트 생성 및 렌더링 (송편, 붉은 별빛, 파티클)
+   4. 오브젝트 생성 및 렌더링
    ========================================================== */
 const rices = [];
 const particles = [];
@@ -740,7 +761,7 @@ function drawSongpyeon(r) {
 }
 
 /* ==========================================================
-   5. 캐릭터 (토끼) 렌더링
+   5. 캐릭터 렌더링
    ========================================================== */
 function drawPlayer(x, y) {
   ctx.save();
@@ -819,18 +840,11 @@ function drawPlayer(x, y) {
     if(isStroke) ctx.stroke(); else ctx.fill();
   };
 
-  const drawTail = (isStroke) => {
-    ctx.beginPath();
-    ctx.arc(-42, 32, 8, 0, Math.PI*2);
-    if(isStroke) ctx.stroke(); else ctx.fill();
-  }
-
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.lineWidth = lineW * 2;
   ctx.strokeStyle = '#2c1910'; 
   
-  drawTail(true);
   drawEars(true);
   drawLegs(true);
   drawArms(true);
@@ -838,7 +852,6 @@ function drawPlayer(x, y) {
 
   ctx.fillStyle = '#ffffff';
   
-  drawTail(false);
   drawEars(false);
   drawLegs(false);
   drawArms(false);
@@ -925,7 +938,7 @@ function drawPlayer(x, y) {
 }
 
 /* ==========================================================
-   6. 게임 메인 루프
+   6. 게임 루프
    ========================================================== */
 let lastSpawn = 0;
 
@@ -935,9 +948,7 @@ function gameLoop(timestamp) {
   if (gameState === 'PLAYING') {
     if (fever) {
       feverTransition = Math.min(1, feverTransition + 0.015);
-      if (Math.random() < 0.35) {
-        spawnRedStar();
-      }
+      if (Math.random() < 0.35) spawnRedStar();
     } else {
       feverTransition = Math.max(0, feverTransition - 0.05);
     }
@@ -995,11 +1006,16 @@ function gameLoop(timestamp) {
           addEatParticle(rabbit.x, rabbit.y - 40, '-10', '#a26bb9');
           rabbit.eatTimer = 25;
           rabbit.eatType = 'bad';
+        } else if (r.type === 'pink') {
+          score += 20;
+          playSound('good');
+          addEatParticle(rabbit.x, rabbit.y - 40, '+20', '#ffb3c7');
+          rabbit.eatTimer = 25;
+          rabbit.eatType = 'good';
         } else {
           score += 10;
           playSound('good');
-          const textColor = r.type === 'white' ? '#ffffff' : '#ffb3c7';
-          addEatParticle(rabbit.x, rabbit.y - 40, '+10', textColor);
+          addEatParticle(rabbit.x, rabbit.y - 40, '+10', '#ffffff');
           rabbit.eatTimer = 25;
           rabbit.eatType = 'good';
         }
@@ -1039,7 +1055,7 @@ function gameLoop(timestamp) {
 requestAnimationFrame(gameLoop);
 
 /* ==========================================================
-   7. 게임 상태 및 랭킹 관리
+   7. 게임 제어 및 Firebase 랭킹 연동
    ========================================================== */
 function startGame() {
   initAudio();
@@ -1107,39 +1123,63 @@ function goToMain() {
   document.getElementById('start-modal').style.display = 'flex';
 }
 
-function getRankings() {
-  return JSON.parse(localStorage.getItem('rabbit_rankings_v5') || '[]');
-}
-
-function saveRanking(name, score) {
-  const ranks = getRankings();
-  ranks.push({ name: name || '달토끼', score, date: new Date().toLocaleDateString() });
-  ranks.sort((a, b) => b.score - a.score);
-  localStorage.setItem('rabbit_rankings_v5', JSON.stringify(ranks.slice(0, 10)));
-}
-
-function renderRankingTable() {
-  const ranks = getRankings();
-  const listEl = document.getElementById('ranking-list');
-  listEl.innerHTML = '';
-  if (ranks.length === 0) {
-    listEl.innerHTML = '<div style="padding:15px; color:#888;">아직 등록된 기록이 없습니다!</div>';
-    return;
+// 랭킹 저장 (Firebase Firestore 연동)
+async function saveRanking(name, score) {
+  try {
+    await db.collection('rankings').add({
+      name: name || '달토끼',
+      score: score,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error adding document: ", error);
+    alert('기록 저장 중 오류가 발생했습니다.');
   }
-  ranks.forEach((r, idx) => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <span class="rank-num">${idx + 1}위</span>
-      <span class="rank-name">${r.name}</span>
-      <span class="rank-pts">${r.score}점</span>
-    `;
-    listEl.appendChild(row);
-  });
+}
+
+// 랭킹 조회 및 표 생성 (Firebase Firestore 연동 - 10명 제한)
+async function renderRankingTable() {
+  const listEl = document.getElementById('ranking-list');
+  listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">데이터를 불러오는 중...</div>';
+  
+  try {
+    const snapshot = await db.collection('rankings')
+      .orderBy('score', 'desc')
+      .limit(10)
+      .get();
+      
+    listEl.innerHTML = '';
+    
+    if (snapshot.empty) {
+      listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">아직 등록된 기록이 없습니다!</div>';
+      return;
+    }
+    
+    let idx = 1;
+    snapshot.forEach(doc => {
+      const r = doc.data();
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <span class="rank-num">${idx}위</span>
+        <span class="rank-name">${r.name}</span>
+        <span class="rank-pts">${r.score}점</span>
+      `;
+      listEl.appendChild(row);
+      idx++;
+    });
+  } catch (error) {
+    console.error("Error fetching rankings: ", error);
+    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#f05255;">랭킹을 불러오지 못했습니다.</div>';
+  }
 }
 
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
-document.getElementById('main-btn').addEventListener('click', goToMain);
+
+document.getElementById('rank-main-btn').addEventListener('click', () => {
+  document.getElementById('ranking-modal').style.display = 'none';
+  goToMain();
+});
 
 document.getElementById('open-rank-btn').addEventListener('click', () => {
   renderRankingTable();
@@ -1150,11 +1190,24 @@ document.getElementById('close-rank-btn').addEventListener('click', () => {
   document.getElementById('ranking-modal').style.display = 'none';
 });
 
-document.getElementById('save-score-btn').addEventListener('click', () => {
-  const name = document.getElementById('player-name').value.trim();
-  saveRanking(name, score);
+// 비동기 처리 적용된 스코어 저장 버튼 핸들러
+document.getElementById('save-score-btn').addEventListener('click', async () => {
+  const nameInput = document.getElementById('player-name');
+  const name = nameInput.value.trim();
+  const btn = document.getElementById('save-score-btn');
+  
+  btn.disabled = true;
+  btn.innerText = '등록 중...';
+  
+  await saveRanking(name, score);
+  
+  btn.disabled = false;
+  btn.innerText = '등록하기';
+  nameInput.value = ''; // 입력창 초기화
+  
   alert('랭킹에 등록되었습니다!');
-  renderRankingTable();
+  await renderRankingTable();
+  
   document.getElementById('gameover-modal').style.display = 'none';
   document.getElementById('ranking-modal').style.display = 'flex';
 });
