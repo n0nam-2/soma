@@ -282,9 +282,10 @@
         <input type="text" id="player-name" class="name-input" placeholder="이름 입력 (최대 6자)" maxlength="6">
         <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
       </div>
-      <div style="margin-top:8px;">
-        <button class="btn-sub" id="main-btn">🏠 메인으로</button>
-        <button class="btn-sub" id="restart-btn">다시하기</button>
+      <!-- 메인으로 / 다시하기 버튼 영역 수정 -->
+      <div style="margin-top: 12px; display: flex; justify-content: center; gap: 10px; padding: 0 10px;">
+        <button class="btn-sub" id="main-btn" style="flex: 1; margin: 0;">🏠 메인으로</button>
+        <button class="btn-sub" id="restart-btn" style="flex: 1; margin: 0;">다시하기</button>
       </div>
     </div>
   </div>
@@ -597,11 +598,11 @@ function drawFlower(fx, fy, color) {
 }
 
 /* ==========================================================
-   4. 오브젝트 생성 및 렌더링 (송편, 불씨, 파티클)
+   4. 오브젝트 생성 및 렌더링 (송편, 붉은 별빛, 파티클)
    ========================================================== */
 const rices = [];
 const particles = [];
-const embers = []; 
+const redStars = []; // 불꽃(Ember)을 대체하는 붉은 별빛 배열
 
 function spawnRice() {
   const isBad = Math.random() < 0.28;
@@ -617,13 +618,14 @@ function spawnRice() {
   });
 }
 
-function spawnEmber() {
-  embers.push({
+// 붉은 별빛 생성 함수
+function spawnRedStar() {
+  redStars.push({
     x: Math.random() * width,
     y: -10,
-    speedY: Math.random() * 2 + 4,
-    size: Math.random() * 3 + 2,
-    color: Math.random() > 0.5 ? '#ffae00' : '#ff4d00',
+    speedY: Math.random() * 2 + 3.5,
+    size: Math.random() * 4 + 4, 
+    color: '#ff4d66', // 붉은 별빛 색상
     offset: Math.random() * 100
   });
 }
@@ -875,7 +877,7 @@ function gameLoop(timestamp) {
     if (fever) {
       feverTransition = Math.min(1, feverTransition + 0.015);
       if (Math.random() < 0.35) {
-        spawnEmber();
+        spawnRedStar();
       }
     } else {
       feverTransition = Math.max(0, feverTransition - 0.05);
@@ -893,22 +895,35 @@ function gameLoop(timestamp) {
       lastSpawn = timestamp;
     }
 
-    for (let i = embers.length - 1; i >= 0; i--) {
-      const e = embers[i];
-      e.y += e.speedY;
-      e.x += Math.sin(timestamp * 0.003 + e.offset) * 1.5;
+    // 붉은 별빛(redStars) 이동 및 렌더링
+    for (let i = redStars.length - 1; i >= 0; i--) {
+      const s = redStars[i];
+      s.y += s.speedY;
+      s.x += Math.sin(timestamp * 0.003 + s.offset) * 1.5;
 
       ctx.save();
-      ctx.globalAlpha = 0.4 + Math.abs(Math.sin(timestamp * 0.005 + e.offset)) * 0.6;
-      ctx.fillStyle = e.color;
-      ctx.shadowColor = e.color;
-      ctx.shadowBlur = 10;
+      ctx.globalAlpha = 0.4 + Math.abs(Math.sin(timestamp * 0.005 + s.offset)) * 0.6;
+      ctx.fillStyle = s.color;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 12;
+      
+      // 4방향 다이아몬드(별) 모양 그리기
       ctx.beginPath();
-      ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+      ctx.moveTo(s.x, s.y - s.size);
+      ctx.quadraticCurveTo(s.x, s.y, s.x + s.size, s.y);
+      ctx.quadraticCurveTo(s.x, s.y, s.x, s.y + s.size);
+      ctx.quadraticCurveTo(s.x, s.y, s.x - s.size, s.y);
+      ctx.quadraticCurveTo(s.x, s.y, s.x, s.y - s.size);
+      ctx.fill();
+
+      // 밝은 코어 추가
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size * 0.25, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      if (e.y > height + 20) embers.splice(i, 1);
+      if (s.y > height + 20) redStars.splice(i, 1);
     }
 
     for (let i = rices.length - 1; i >= 0; i--) {
@@ -979,7 +994,7 @@ function startGame() {
   feverTransition = 0;
   rices.length = 0;
   particles.length = 0;
-  embers.length = 0; 
+  redStars.length = 0; // 초기화
   rabbit.x = width / 2;
   rabbit.targetX = width / 2;
   rabbit.eatTimer = 0;
@@ -1024,7 +1039,7 @@ function goToMain() {
   score = 0;
   rices.length = 0;
   particles.length = 0;
-  embers.length = 0;
+  redStars.length = 0; // 초기화
   rabbit.x = width / 2;
   rabbit.targetX = width / 2;
   rabbit.eatTimer = 0;
