@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 아이폰 Safe Area(노치/다이내믹 아일랜드) 계산을 위해 viewport-fit=cover 추가 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>달토끼 송편 잡기</title>
   
   <!-- Firebase SDK 추가 (호환성 버전) - Realtime Database -->
@@ -48,10 +49,10 @@
       display: block;
     }
 
-    /* 상단 UI 바 */
+    /* 상단 UI 바: 아이폰 노치 및 다이내믹 아일랜드 안전 영역 반영 */
     #top-ui {
       position: absolute;
-      top: 14px;
+      top: max(24px, calc(env(safe-area-inset-top, 0px) + 14px));
       left: 0;
       width: 100%;
       display: flex;
@@ -100,9 +101,10 @@
       to { transform: scale(1.1); background: #ffe3e3; }
     }
 
+    /* 피버 배너: 상단 UI 위치 이동에 맞춰 함께 하향 조정 */
     #fever-banner {
       position: absolute;
-      top: 72px;
+      top: max(82px, calc(env(safe-area-inset-top, 0px) + 72px));
       left: 50%;
       transform: translateX(-50%);
       background: linear-gradient(180deg, #ff3838, #ffb300);
@@ -328,7 +330,7 @@
       <div style="font-size:1.6rem; color:#e7526f; margin-bottom:10px;">👑 명예의 전당 랭킹</div>
       <div class="ranking-table" id="ranking-list"></div>
       <div style="margin-top: 12px;">
-        <button class="btn-sub" id="rank-main-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">메인으로</button>
+        <button class="btn-sub" id="rank-main-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">🏠 메인으로</button>
       </div>
     </div>
   </div>
@@ -1338,7 +1340,7 @@ async function renderRankingTable() {
     });
   } catch (error) {
     console.error("Error fetching rankings: ", error);
-    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#f05255;">랭킹을 불러오지 못했습니다.</div>';
+    listEl.innerHTML = '<div style="padding:15px; text-align:color:#f05255;">랭킹을 불러오지 못했습니다.</div>';
   }
 }
 
