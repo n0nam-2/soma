@@ -2,11 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <!-- 아이폰 Safe Area(노치/다이내믹 아일랜드) 계산을 위해 viewport-fit=cover 추가 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>달토끼 송편 잡기</title>
   
-  <!-- Firebase SDK 추가 (호환성 버전) - Realtime Database -->
+  <!-- Firebase SDK (Realtime Database) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
 
@@ -49,7 +48,7 @@
       display: block;
     }
 
-    /* 상단 UI 바: 아이폰 노치 및 다이내믹 아일랜드 안전 영역 반영 */
+    /* 상단 인게임 UI 바 */
     #top-ui {
       position: absolute;
       top: max(24px, calc(env(safe-area-inset-top, 0px) + 14px));
@@ -126,46 +125,77 @@
       100% { transform: translateX(-50%) scale(1.08); }
     }
 
-    /* 모달 */
+    /* ==========================================================
+       모달 & 오버레이 스타일
+       ========================================================== */
     .modal-overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 15, 28, 0.78);
+      z-index: 50;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      z-index: 50;
+    }
+
+    /* 시작 화면: 전체 UI를 화면 정중앙에 여백 없이 밀착 배치 */
+    #start-modal {
+      background: rgba(10, 15, 28, 0.25);
+      justify-content: center;
+      gap: 12px;
+      padding: 20px 16px;
+    }
+
+    .dialog-overlay {
+      background: rgba(10, 15, 28, 0.78);
+      justify-content: center;
       padding: 20px;
     }
 
     .dialog-box {
       width: 90%;
       max-width: 340px;
-      background: #fffdf5;
-      border: 4px solid #7c441b;
-      border-radius: 26px;
+      background: #fffef7;
+      border: 4px solid #4a2810;
+      border-radius: 28px;
       padding: 22px 18px;
       text-align: center;
-      box-shadow: 0 8px 0 #4e2609;
+      box-shadow: 0 8px 0 #321908;
     }
 
-    .title-banner {
-      font-size: 2.2rem;
-      color: #ff5478;
-      text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff, 0 4px 0 #9e243b;
-      margin-bottom: 12px;
+    /* ==========================================================
+       타이틀 및 송편 점수 안내 카드
+       ========================================================== */
+    .title-badge-container {
+      width: 100%;
+      max-width: 325px;
+      margin: 0 auto;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
     }
 
-    .info-card {
-      background: #faeed9;
-      border: 2px dashed #b8865a;
-      border-radius: 16px;
-      padding: 10px;
-      margin-bottom: 16px;
+    .title-logo-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .guide-card {
+      background: rgba(255, 253, 247, 0.95);
+      border: 3px solid #5a371e;
+      border-radius: 20px;
+      padding: 9px 14px;
+      margin: 4px auto 0 auto;
+      max-width: 295px;
+      box-shadow: 0 4px 0 #44240f;
+      text-align: center;
+    }
+
+    .guide-card-title {
+      font-size: 0.95rem;
+      color: #5e3d23;
+      margin-bottom: 6px;
     }
 
     .rice-guide-row {
@@ -173,57 +203,168 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      margin: 6px 0;
       font-size: 1.05rem;
     }
 
     .mini-rice-icon {
-      width: 32px;
-      height: 22px;
-      border-radius: 16px 16px 4px 4px;
+      width: 28px;
+      height: 20px;
+      border-radius: 14px 14px 4px 4px;
       border: 2px solid #333;
       display: inline-block;
       box-shadow: 1px 2px 0 rgba(0,0,0,0.15);
+      vertical-align: middle;
     }
-    .icon-white { background: #ffffff; border-color: #5c3f26; }
-    .icon-pink  { background: #ffb8cc; border-color: #7a2b3d; }
-    .icon-purple{ background: #a46db8; border-color: #3b1747; }
+    .icon-white  { background: #ffffff; border-color: #5c3f26; }
+    .icon-pink   { background: #ffb8cc; border-color: #7a2b3d; }
+    .icon-purple { background: #ba7ece; border-color: #3b1747; }
 
-    .btn-pink {
-      background: #ff688c;
-      color: white;
-      font-size: 1.35rem;
-      border: 3px solid #632230;
-      border-radius: 25px;
-      padding: 10px 24px;
+    /* ==========================================================
+       버튼 UI
+       ========================================================== */
+    .bottom-action-container {
+      width: 100%;
+      max-width: 325px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 핑크 젤리 START 메인 버튼 */
+    .btn-start {
+      position: relative;
+      width: 86%;
+      max-width: 290px;
+      height: 60px;
+      background: linear-gradient(180deg, #ffa8c0 0%, #ff739b 48%, #f24e7d 100%);
+      border: 3.5px solid #4a1923;
+      border-radius: 9999px;
+      box-shadow: 
+        inset 0 3px 2px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 3px rgba(160, 20, 50, 0.25),
+        0 6px 0 #4a1923,
+        0 8px 15px rgba(0, 0, 0, 0.35);
       cursor: pointer;
-      margin: 8px 0;
-      width: 82%;
-      box-shadow: 0 4px 0 #632230;
-      transition: 0.1s;
+      outline: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .btn-pink:active:not(:disabled) {
+    .btn-start:active {
+      transform: translateY(4px);
+      box-shadow: 
+        inset 0 3px 2px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 3px rgba(160, 20, 50, 0.25),
+        0 2px 0 #4a1923,
+        0 4px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .btn-start-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 1.9rem;
+      color: #ffffff;
+      letter-spacing: 2px;
+      text-shadow: 
+        -2.5px -2.5px 0 #4a1923,
+         2.5px -2.5px 0 #4a1923,
+        -2.5px  2.5px 0 #4a1923,
+         2.5px  2.5px 0 #4a1923,
+         0px    3.5px 0 #4a1923;
+    }
+
+    .btn-start-flower {
+      font-size: 1.35rem;
+      color: #fff2f6;
+      text-shadow: 
+        -2px -2px 0 #4a1923,
+         2px -2px 0 #4a1923,
+        -2px  2px 0 #4a1923,
+         2px  2px 0 #4a1923;
+    }
+
+    /* 랭킹보기 버튼 (중앙 정렬) */
+    .btn-pill-sub {
+      height: 44px;
+      padding: 0 24px;
+      border-radius: 9999px;
+      background: #ffffff;
+      border: 3px solid #5a371e;
+      box-shadow: 0 4px 0 #44240f;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 7px;
+      font-size: 1.05rem;
+      color: #4a2810;
+      font-weight: bold;
+      cursor: pointer;
+      outline: none;
+      margin: 0 auto;
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-pill-sub:active {
       transform: translateY(3px);
-      box-shadow: 0 1px 0 #632230;
+      box-shadow: 0 1px 0 #44240f;
     }
 
-    .btn-pink:disabled {
+    /* 모달 버튼 */
+    .btn-dialog-pink {
+      background: linear-gradient(180deg, #ff94b4 0%, #ff6b95 50%, #f04e7b 100%);
+      color: white;
+      font-size: 1.25rem;
+      border: 3px solid #4a1923;
+      border-radius: 25px;
+      padding: 9px 22px;
+      cursor: pointer;
+      margin: 8px auto;
+      display: block;
+      width: 82%;
+      box-shadow: 0 4px 0 #4a1923;
+      text-shadow: -1.5px -1.5px 0 #4a1923, 1.5px -1.5px 0 #4a1923, -1.5px 1.5px 0 #4a1923, 1.5px 1.5px 0 #4a1923;
+      transition: 0.08s;
+      outline: none;
+    }
+
+    .btn-dialog-pink:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #4a1923;
+    }
+
+    .btn-dialog-pink:disabled {
       background: #ccc;
       border-color: #999;
       box-shadow: 0 4px 0 #999;
       cursor: not-allowed;
     }
 
-    .btn-sub {
-      background: #fdf5e6;
-      border: 2px solid #9e6d44;
-      color: #633918;
-      border-radius: 20px;
-      padding: 7px 15px;
-      font-size: 0.95rem;
+    .btn-dialog-sub {
+      background: #ffffff;
+      border: 2.8px solid #5a371e;
+      color: #4a2810;
+      border-radius: 22px;
+      padding: 8px 18px;
+      font-size: 1.05rem;
       cursor: pointer;
-      margin: 4px;
+      margin: 6px auto 0 auto;
+      display: block;
+      width: 82%;
+      box-shadow: 0 3px 0 #44240f;
+      transition: 0.08s;
+      outline: none;
+    }
+
+    .btn-dialog-sub:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #44240f;
     }
 
     .ranking-table {
@@ -246,14 +387,15 @@
     .rank-pts { font-weight: bold; color: #3c8254; }
 
     input.name-input {
-      width: 78%;
+      width: 82%;
       padding: 8px 12px;
       font-size: 1.1rem;
-      border: 2px solid #7c441b;
+      border: 2.5px solid #4a2810;
       border-radius: 16px;
       text-align: center;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       outline: none;
+      background: #fff;
     }
   </style>
 </head>
@@ -265,7 +407,6 @@
   <div id="top-ui" style="display: none;">
     <div class="ui-pill" id="timer-box">
       <span class="ui-label-group">
-        <!-- 일러스트 시계 이미지 -->
         <img class="ui-icon" alt="TIME" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M7 6C5 8 5 11 7 12' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round' fill='none'/><path d='M25 6C27 8 27 11 25 12' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round' fill='none'/><path d='M8 26L5 29' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round'/><path d='M24 26L27 29' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round'/><circle cx='16' cy='17' r='11.5' fill='%23ffe49e' stroke='%235d3a1a' stroke-width='2.6'/><circle cx='16' cy='17' r='8.5' fill='%23ffffff'/><path d='M16 17L16 12' stroke='%235d3a1a' stroke-width='2.2' stroke-linecap='round'/><path d='M16 17L20.5 17' stroke='%23e65c5c' stroke-width='2.2' stroke-linecap='round'/><circle cx='16' cy='17' r='1.8' fill='%235d3a1a'/></svg>">
         TIME
       </span>
@@ -274,7 +415,6 @@
 
     <div class="ui-pill">
       <span class="ui-label-group">
-        <!-- 일러스트 떡꼬치 이미지 -->
         <img class="ui-icon" alt="SCORE" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M5 27L27 5' stroke='%23b88147' stroke-width='3.2' stroke-linecap='round'/><circle cx='10' cy='22' r='5.2' fill='%23b5db97' stroke='%235d3a1a' stroke-width='2.2'/><circle cx='16' cy='16' r='5.2' fill='%23ffffff' stroke='%235d3a1a' stroke-width='2.2'/><circle cx='22' cy='10' r='5.2' fill='%23ff9cb5' stroke='%235d3a1a' stroke-width='2.2'/><circle cx='8.5' cy='20.5' r='1.3' fill='%23ffffff'/><circle cx='14.5' cy='14.5' r='1.3' fill='%23ffffff'/><circle cx='20.5' cy='8.5' r='1.3' fill='%23ffffff'/></svg>">
         SCORE
       </span>
@@ -286,51 +426,142 @@
 
   <!-- 시작 화면 -->
   <div class="modal-overlay" id="start-modal">
-    <div class="dialog-box">
-      <div class="title-banner">달토끼 송편잡기</div>
-      <div class="info-card">
-        <p style="color:#5e3d23; font-size:0.95rem; margin-bottom:8px;">토끼에게 맛있는 꿀송편을 먹여 주세요!</p>
+    <!-- 타이틀 및 엠블럼 -->
+    <div class="title-badge-container">
+      <svg class="title-logo-svg" viewBox="0 0 340 180" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="yellowGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fffb99"/>
+            <stop offset="60%" stop-color="#ffd534"/>
+            <stop offset="100%" stop-color="#f2a800"/>
+          </linearGradient>
+          <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffb8cc"/>
+            <stop offset="55%" stop-color="#ff7ca1"/>
+            <stop offset="100%" stop-color="#e84573"/>
+          </linearGradient>
+          <filter id="cloudShadow" x="-10%" y="-10%" width="125%" height="125%">
+            <feDropShadow dx="0" dy="5" stdDeviation="0" flood-color="#2d150b"/>
+          </filter>
+        </defs>
+
+        <!-- 구름 배경 및 귀 -->
+        <g filter="url(#cloudShadow)">
+          <path d="M 230 46 C 220 16, 235 2, 245 10 C 255 18, 250 45, 246 52 Z" fill="#fffef5" stroke="#3e1e10" stroke-width="4.5" stroke-linejoin="round"/>
+          <path d="M 232 38 C 226 20, 236 10, 242 16 C 248 22, 244 38, 242 42 Z" fill="#ffb8cc"/>
+          
+          <path d="M 252 50 C 250 20, 268 10, 275 20 C 282 30, 272 50, 266 58 Z" fill="#fffef5" stroke="#3e1e10" stroke-width="4.5" stroke-linejoin="round"/>
+          <path d="M 256 42 C 255 26, 267 18, 271 25 C 275 32, 268 44, 264 47 Z" fill="#ffb8cc"/>
+
+          <path d="
+            M 60 90
+            C 40 85, 25 100, 28 120
+            C 22 135, 38 155, 65 152
+            C 80 162, 120 165, 170 162
+            C 220 165, 260 162, 280 152
+            C 308 155, 322 132, 315 118
+            C 322 98, 305 82, 285 86
+            C 285 62, 260 48, 235 55
+            C 215 35, 175 32, 150 45
+            C 130 35, 95 38, 80 60
+            C 60 58, 48 72, 60 90 Z
+          " fill="#fffdf5" stroke="#3e1e10" stroke-width="5" stroke-linejoin="round" />
+        </g>
+
+        <!-- 벚꽃 & 이파리 장식 -->
+        <g transform="translate(42, 74) scale(0.9)">
+          <circle cx="-5" cy="0" r="5" fill="#ffb3cb"/>
+          <circle cx="5" cy="0" r="5" fill="#ffb3cb"/>
+          <circle cx="0" cy="-5" r="5" fill="#ffb3cb"/>
+          <circle cx="0" cy="5" r="5" fill="#ffb3cb"/>
+          <circle cx="0" cy="0" r="3.5" fill="#ffe066"/>
+        </g>
+        <g transform="translate(290, 78) scale(0.9)">
+          <circle cx="-5" cy="0" r="5" fill="#ffb3cb"/>
+          <circle cx="5" cy="0" r="5" fill="#ffb3cb"/>
+          <circle cx="0" cy="-5" r="5" fill="#ffb3cb"/>
+          <circle cx="0" cy="5" r="5" fill="#ffb3cb"/>
+          <circle cx="0" cy="0" r="3.5" fill="#ffe066"/>
+        </g>
+        <path d="M 265 60 C 275 52, 285 62, 275 70 C 265 68, 260 62, 265 60 Z" fill="#8ec354" stroke="#3e1e10" stroke-width="2"/>
+
+        <!-- 1행 타이틀: 달토끼 (구름 내부 정중앙 균형 배치) -->
+        <text x="170" y="94" text-anchor="middle" font-family="'Jua', sans-serif" font-size="46" font-weight="900"
+              fill="url(#yellowGrad)" stroke="#3e1e10" stroke-width="7.5" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="2">달토끼</text>
+
+        <!-- 좌측 흰 송편 -->
+        <g transform="translate(48, 127) scale(0.7) rotate(-15)">
+          <path d="M -16 5 Q 0 -18 16 5 Q 0 16 -16 5 Z" fill="#ffffff" stroke="#3e1e10" stroke-width="3.5" stroke-linejoin="round"/>
+          <ellipse cx="-4" cy="-1" rx="6" ry="3" fill="rgba(255,255,255,0.9)" transform="rotate(-15)"/>
+        </g>
+
+        <!-- 2행 타이틀: 송편잡기 (구름 내부 정중앙 균형 배치) -->
+        <text x="170" y="142" text-anchor="middle" font-family="'Jua', sans-serif" font-size="40" font-weight="900"
+              fill="url(#pinkGrad)" stroke="#3e1e10" stroke-width="7.5" stroke-linejoin="round" paint-order="stroke fill" letter-spacing="1">송편잡기</text>
+
+        <!-- 우측 보라 송편 -->
+        <g transform="translate(290, 127) scale(0.7) rotate(15)">
+          <path d="M -16 5 Q 0 -18 16 5 Q 0 16 -16 5 Z" fill="#ba7ece" stroke="#3e1e10" stroke-width="3.5" stroke-linejoin="round"/>
+          <ellipse cx="-4" cy="-1" rx="6" ry="3" fill="rgba(255,255,255,0.8)" transform="rotate(-15)"/>
+        </g>
+      </svg>
+
+      <!-- 점수 안내 박스 -->
+      <div class="guide-card">
+        <div class="guide-card-title">토끼에게 맛있는 꿀송편을 먹여 주세요!</div>
         <div class="rice-guide-row">
           <span class="mini-rice-icon icon-white"></span>
           <span style="color:#c9325e; font-weight:bold;">+10점</span>
           <span class="mini-rice-icon icon-pink" style="margin-left: 8px;"></span>
           <span style="color:#ff688c; font-weight:bold;">+20점</span>
         </div>
-        <div class="rice-guide-row">
+        <div class="rice-guide-row" style="margin-top: 4px;">
           <span class="mini-rice-icon icon-purple"></span>
           <span style="color:#6d3596; font-weight:bold;">콩송편: -10점</span>
         </div>
       </div>
-      <button class="btn-pink" id="start-btn">★ START ★</button>
-      <div>
-        <button class="btn-sub" id="open-rank-btn">🏆 랭킹 보기</button>
-      </div>
+    </div>
+
+    <!-- 하단 버튼 영역 -->
+    <div class="bottom-action-container">
+      <button class="btn-start" id="start-btn">
+        <div class="btn-start-content">
+          <span class="btn-start-flower">✿</span>
+          <span>START</span>
+          <span class="btn-start-flower">✿</span>
+        </div>
+      </button>
+
+      <button class="btn-pill-sub" id="open-rank-btn">
+        <span style="font-size:1.2rem;">👑</span>
+        <span>랭킹보기</span>
+      </button>
     </div>
   </div>
 
-  <!-- 게임 오버 -->
-  <div class="modal-overlay" id="gameover-modal" style="display: none;">
+  <!-- 게임 오버 모달 -->
+  <div class="modal-overlay dialog-overlay" id="gameover-modal" style="display: none;">
     <div class="dialog-box">
-      <div style="font-size:1.75rem; color:#f05255; margin-bottom:8px;">★ GAME OVER ★</div>
-      <p style="color:#6d482f; font-size:1rem;">YOUR SCORE</p>
-      <div style="font-size: 3.2rem; color:#4a2810; margin: 2px 0;" id="final-score">0</div>
+      <div style="font-size:1.85rem; color:#f05255; margin-bottom:8px; text-shadow: 1px 1px 0 #321908;">★ GAME OVER ★</div>
+      <p style="color:#6d482f; font-size:1.05rem;">YOUR SCORE</p>
+      <div style="font-size: 3.4rem; color:#4a2810; margin: 2px 0;" id="final-score">0</div>
       <div style="margin-top:8px;">
         <input type="text" id="player-name" class="name-input" placeholder="이름 입력 (최대 6자)" maxlength="6">
-        <button class="btn-pink" id="save-score-btn" style="width:78%; padding:7px; font-size:1.1rem;">등록하기</button>
+        <button class="btn-dialog-pink" id="save-score-btn">등록하기</button>
       </div>
-      <div style="margin-top: 12px;">
-        <button class="btn-sub" id="restart-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">다시하기</button>
+      <div style="margin-top: 6px;">
+        <button class="btn-dialog-sub" id="restart-btn">다시하기</button>
       </div>
     </div>
   </div>
 
-  <!-- 랭킹 -->
-  <div class="modal-overlay" id="ranking-modal" style="display: none;">
+  <!-- 랭킹 모달 -->
+  <div class="modal-overlay dialog-overlay" id="ranking-modal" style="display: none;">
     <div class="dialog-box">
-      <div style="font-size:1.6rem; color:#e7526f; margin-bottom:10px;">👑 명예의 전당 랭킹</div>
+      <div style="font-size:1.7rem; color:#e7526f; margin-bottom:10px; text-shadow: 1px 1px 0 #321908;">👑 명예의 전당 랭킹</div>
       <div class="ranking-table" id="ranking-list"></div>
-      <div style="margin-top: 12px;">
-        <button class="btn-sub" id="rank-main-btn" style="width: 78%; padding: 7px; font-size: 1.1rem; margin: 0 auto; display: block;">🏠 메인으로</button>
+      <div style="margin-top: 10px;">
+        <button class="btn-dialog-sub" id="rank-main-btn">메인으로</button>
       </div>
     </div>
   </div>
@@ -353,7 +584,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
 
 /* ==========================================================
    1. 정밀 Web Audio API 칩튠 BGM 및 SFX 엔진
@@ -547,7 +777,7 @@ function playSound(type) {
 }
 
 /* ==========================================================
-   2. 캔버스 및 게임 변수 설정
+   2. 캔버스 및 게임 변수 설정 (원본 보존)
    ========================================================== */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -625,7 +855,7 @@ for(let i = 0; i < 35; i++) {
 fieldFlowers.sort((a, b) => a.yOffset - b.yOffset);
 
 /* ==========================================================
-   3. 배경 렌더링
+   3. 배경 렌더링 (원본 보존)
    ========================================================== */
 function drawNightSky(t) {
   const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
@@ -652,7 +882,6 @@ function drawNightSky(t) {
     ctx.restore();
   });
 
-  // 달 렌더링 (y축 위치: 약 110px, 반지름 48px -> 바닥 기준 약 170px)
   ctx.save();
   const moonX = width - 95;
   const moonY = 110;
@@ -724,7 +953,6 @@ function drawNightSky(t) {
 
   ctx.restore();
 
-  // 소나무 가지 위치: 달(y=110~170)보다 아래쪽(y=190)으로 배치
   drawDetailedPineBranch(-20, 190, 1.18);
 
   ctx.fillStyle = '#425c27';
@@ -835,7 +1063,7 @@ function drawFlower(fx, fy, color, scale = 1) {
 }
 
 /* ==========================================================
-   4. 오브젝트 생성 및 렌더링
+   4. 송편 오브젝트 렌더링 (원본 보존)
    ========================================================== */
 const rices = [];
 const particles = [];
@@ -925,7 +1153,7 @@ function drawSongpyeon(r) {
 }
 
 /* ==========================================================
-   5. 캐릭터 렌더링
+   5. 토끼 캐릭터 렌더링 (원본 보존)
    ========================================================== */
 function drawPlayer(x, y) {
   ctx.save();
@@ -1342,10 +1570,13 @@ async function renderRankingTable() {
     });
   } catch (error) {
     console.error("Error fetching rankings: ", error);
-    listEl.innerHTML = '<div style="padding:15px; text-align:color:#f05255;">랭킹을 불러오지 못했습니다.</div>';
+    listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#f05255;">랭킹을 불러오지 못했습니다.</div>';
   }
 }
 
+/* ==========================================================
+   버튼 이벤트 리스너
+   ========================================================== */
 document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
 
