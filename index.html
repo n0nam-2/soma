@@ -57,7 +57,7 @@
       display: flex;
       justify-content: space-around;
       align-items: center;
-      padding: 0 10px;
+      padding: 0 12px;
       pointer-events: none;
       z-index: 10;
     }
@@ -69,10 +69,24 @@
       padding: 5px 16px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       font-size: 1.15rem;
       color: #4a2810;
       box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+    }
+
+    .ui-label-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ui-icon {
+      width: 24px;
+      height: 24px;
+      display: inline-block;
+      vertical-align: middle;
+      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
     }
 
     .ui-pill.fever-timer {
@@ -248,11 +262,20 @@
 
   <div id="top-ui" style="display: none;">
     <div class="ui-pill" id="timer-box">
-      <span>⏰ TIME</span>
+      <span class="ui-label-group">
+        <!-- 일러스트 시계 이미지 -->
+        <img class="ui-icon" alt="TIME" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M7 6C5 8 5 11 7 12' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round' fill='none'/><path d='M25 6C27 8 27 11 25 12' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round' fill='none'/><path d='M8 26L5 29' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round'/><path d='M24 26L27 29' stroke='%235d3a1a' stroke-width='2.6' stroke-linecap='round'/><circle cx='16' cy='17' r='11.5' fill='%23ffe49e' stroke='%235d3a1a' stroke-width='2.6'/><circle cx='16' cy='17' r='8.5' fill='%23ffffff'/><path d='M16 17L16 12' stroke='%235d3a1a' stroke-width='2.2' stroke-linecap='round'/><path d='M16 17L20.5 17' stroke='%23e65c5c' stroke-width='2.2' stroke-linecap='round'/><circle cx='16' cy='17' r='1.8' fill='%235d3a1a'/></svg>">
+        TIME
+      </span>
       <span id="time-text">60</span>
     </div>
+
     <div class="ui-pill">
-      <span>🍡 SCORE</span>
+      <span class="ui-label-group">
+        <!-- 일러스트 떡꼬치 이미지 -->
+        <img class="ui-icon" alt="SCORE" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M5 27L27 5' stroke='%23b88147' stroke-width='3.2' stroke-linecap='round'/><circle cx='10' cy='22' r='5.2' fill='%23b5db97' stroke='%235d3a1a' stroke-width='2.2'/><circle cx='16' cy='16' r='5.2' fill='%23ffffff' stroke='%235d3a1a' stroke-width='2.2'/><circle cx='22' cy='10' r='5.2' fill='%23ff9cb5' stroke='%235d3a1a' stroke-width='2.2'/><circle cx='8.5' cy='20.5' r='1.3' fill='%23ffffff'/><circle cx='14.5' cy='14.5' r='1.3' fill='%23ffffff'/><circle cx='20.5' cy='8.5' r='1.3' fill='%23ffffff'/></svg>">
+        SCORE
+      </span>
       <span id="score-text">0</span>
     </div>
   </div>
@@ -326,100 +349,199 @@ const firebaseConfig = {
   measurementId: "G-Z4W6KJGNDL"
 };
 
-// Firebase 초기화 (Realtime Database 사용)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 
 /* ==========================================================
-   1. 오디오 합성기 (플래시 게임풍 레트로 8비트 BGM)
+   1. 정밀 Web Audio API 칩튠 BGM 및 SFX 엔진
    ========================================================== */
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
-let bgmTimeout = null;
+let masterGain = null;
+
+let isBgmPlaying = false;
 let bgmStep = 0;
+let nextStepTime = 0.0;
+let bgmTimerID = null;
+let noiseBuffer = null;
 
 function initAudio() {
   if (!audioCtx) {
     audioCtx = new AudioContext();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+    masterGain.connect(audioCtx.destination);
+    createNoiseBuffer();
   }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function createNoiseBuffer() {
+  const bufferSize = audioCtx.sampleRate * 1.5;
+  noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const output = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    output[i] = Math.random() * 2 - 1;
+  }
+}
+
+const N = {
+  C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
+  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, B5: 987.77,
+  C6: 1046.50, D6: 1174.66, E6: 1318.51, _: 0
+};
+
+const bgmMelody = [
+  N.E5, N.G5, N.C6, N.G5,  N.E5, N.D5, N.C5, N.D5,
+  N.E5, N.A5, N.C6, N.A5,  N.E5, N.D5, N.C5, N.E5,
+  N.F5, N.A5, N.C6, N.A5,  N.F5, N.G5, N.A5, N.C6,
+  N.B5, N.G5, N.D6, N.B5,  N.G5, N.A5, N.B5, N.D6
+];
+
+const bgmBass = [
+  N.C3, N.C4, N.G3, N.C4,  N.E3, N.C4, N.G3, N.C4,
+  N.A3, N.A3, N.E3, N.A3,  N.C3, N.A3, N.E3, N.A3,
+  N.F3, N.F3, N.C3, N.F3,  N.A3, N.F3, N.C3, N.F3,
+  N.G3, N.G3, N.D3, N.G3,  N.B3, N.G3, N.D3, N.G3
+];
+
+function playSynthTone(freq, time, duration, type = 'square', gainLevel = 0.08) {
+  if (!freq || freq === 0 || !masterGain) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, time);
+
+  gain.gain.setValueAtTime(gainLevel, time);
+  gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(time);
+  osc.stop(time + duration);
+}
+
+function playDrum(type, time) {
+  if (!masterGain) return;
+  if (type === 'kick') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.setValueAtTime(130, time);
+    osc.frequency.exponentialRampToValueAtTime(32, time + 0.09);
+    gain.gain.setValueAtTime(0.18, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.09);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(time);
+    osc.stop(time + 0.09);
+  } else if (type === 'snare' && noiseBuffer) {
+    const node = audioCtx.createBufferSource();
+    node.buffer = noiseBuffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(900, time);
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.09, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.07);
+
+    node.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+    node.start(time);
+    node.stop(time + 0.07);
+  } else if (type === 'hihat' && noiseBuffer) {
+    const node = audioCtx.createBufferSource();
+    node.buffer = noiseBuffer;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(4500, time);
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.04, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+
+    node.connect(filter);
+    filter.connect(gain);
+    gain.connect(masterGain);
+    node.start(time);
+    node.stop(time + 0.025);
+  }
+}
+
+function scheduleBGM() {
+  if (!isBgmPlaying) return;
+
+  const tempo = fever ? 172 : 138; 
+  const stepInterval = (60.0 / tempo) / 2;
+
+  while (nextStepTime < audioCtx.currentTime + 0.15) {
+    const step = bgmStep % 32;
+
+    const melFreq = bgmMelody[step];
+    playSynthTone(melFreq, nextStepTime, stepInterval * 0.85, 'square', fever ? 0.07 : 0.06);
+
+    const bassFreq = bgmBass[step];
+    playSynthTone(bassFreq, nextStepTime, stepInterval * 0.9, 'triangle', 0.12);
+
+    if (step % 8 === 0 || step % 8 === 4) {
+      playDrum('kick', nextStepTime);
+    } else if (step % 8 === 2 || step % 8 === 6) {
+      playDrum('snare', nextStepTime);
+    }
+    playDrum('hihat', nextStepTime);
+
+    nextStepTime += stepInterval;
+    bgmStep++;
+  }
+
+  bgmTimerID = setTimeout(scheduleBGM, 35);
+}
+
+function startBGM() {
+  initAudio();
+  if (bgmTimerID) clearTimeout(bgmTimerID);
+  isBgmPlaying = true;
+  bgmStep = 0;
+  nextStepTime = audioCtx.currentTime + 0.05;
+  scheduleBGM();
+}
+
+function stopBGM() {
+  isBgmPlaying = false;
+  if (bgmTimerID) clearTimeout(bgmTimerID);
 }
 
 function playSound(type) {
   if (!audioCtx) return;
   const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
 
   if (type === 'good') {
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.12);
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-    osc.start(now);
-    osc.stop(now + 0.12);
+    playSynthTone(880, now, 0.08, 'sine', 0.15);
+    playSynthTone(1320, now + 0.07, 0.12, 'sine', 0.18);
   } else if (type === 'bad') {
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(220, now);
-    osc.frequency.linearRampToValueAtTime(95, now + 0.2);
-    gain.gain.setValueAtTime(0.35, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
-    osc.start(now);
-    osc.stop(now + 0.2);
-  }
-}
-
-function startBGM() {
-  if (bgmTimeout) clearTimeout(bgmTimeout);
-  bgmStep = 0;
-  playBGMNote();
-}
-
-// 8비트 아르페지오 신스 (플래시 게임 감성)
-function playBGMNote() {
-  if (gameState !== 'PLAYING') return;
-
-  // 신나고 통통 튀는 아르페지오 멜로디 배열
-  const melody = [
-    523.25, 659.25, 783.99, 659.25, 
-    523.25, 659.25, 783.99, 659.25,
-    587.33, 698.46, 880.00, 698.46, 
-    587.33, 698.46, 880.00, 698.46,
-    493.88, 587.33, 783.99, 587.33, 
-    493.88, 587.33, 783.99, 587.33,
-    523.25, 392.00, 329.63, 392.00, 
-    523.25, 0, 0, 0
-  ];
-  
-  const note = melody[bgmStep % melody.length];
-  
-  // 피버 타임 시 딜레이와 길이를 줄여 긴박함, 템포 상승 연출
-  const delay = fever ? 85 : 140; 
-  const duration = fever ? 0.07 : 0.11;
-
-  if (note !== 0) {
-    const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    
-    // 'square' 파형으로 전형적인 8비트/레트로 사운드 구현
-    osc.type = 'square';
-    osc.frequency.value = note;
-    
-    gain.gain.setValueAtTime(0.035, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(260, now);
+    osc.frequency.linearRampToValueAtTime(110, now + 0.18);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
     osc.start(now);
-    osc.stop(now + duration);
+    osc.stop(now + 0.18);
+  } else if (type === 'gameover') {
+    [523.25, 493.88, 440.00, 349.23].forEach((f, i) => {
+      playSynthTone(f, now + i * 0.12, 0.14, 'square', 0.09);
+    });
   }
-  
-  bgmStep++;
-  bgmTimeout = setTimeout(playBGMNote, delay);
 }
 
 /* ==========================================================
@@ -716,15 +838,14 @@ const particles = [];
 const redStars = []; 
 
 function spawnRice() {
-  // 흰색 2 : 분홍색 0.5 : 보라색 1 비율 생성 (총합 3.5)
   const rand = Math.random() * 3.5;
   let riceType;
   
-  if (rand < 1) {           // 1.0 비율 (보라색 콩송편)
+  if (rand < 1) {
     riceType = 'purple';
-  } else if (rand < 1.5) {  // 0.5 비율 (분홍색 꿀송편)
+  } else if (rand < 1.5) {
     riceType = 'pink';
-  } else {                  // 2.0 비율 (흰색 꿀송편)
+  } else {
     riceType = 'white';
   }
 
@@ -977,7 +1098,7 @@ function drawPlayer(x, y) {
 }
 
 /* ==========================================================
-   6. 게임 루프
+   6. 게임 메인 루프
    ========================================================== */
 let lastSpawn = 0;
 
@@ -1094,11 +1215,11 @@ function gameLoop(timestamp) {
 requestAnimationFrame(gameLoop);
 
 /* ==========================================================
-   7. 게임 제어 및 Firebase 랭킹 연동 (Realtime Database 버전)
+   7. 게임 제어 및 Firebase 랭킹 연동
    ========================================================== */
 function startGame() {
   initAudio();
-  startBGM(); // 게임 시작 시 BGM 강제 재시작 (초기화)
+  startBGM();
   
   gameState = 'PLAYING';
   score = 0;
@@ -1138,6 +1259,9 @@ function startGame() {
 
 function endGame() {
   clearInterval(timerInterval);
+  stopBGM();
+  playSound('gameover');
+
   gameState = 'GAMEOVER';
   fever = false;
   document.getElementById('fever-banner').style.display = 'none';
@@ -1146,6 +1270,7 @@ function endGame() {
 }
 
 function goToMain() {
+  stopBGM();
   gameState = 'START';
   fever = false;
   feverTransition = 0;
@@ -1164,7 +1289,6 @@ function goToMain() {
   document.getElementById('start-modal').style.display = 'flex';
 }
 
-// 랭킹 저장 (Realtime Database 연동)
 async function saveRanking(name, score) {
   try {
     const rankRef = db.ref('rankings').push();
@@ -1179,7 +1303,6 @@ async function saveRanking(name, score) {
   }
 }
 
-// 랭킹 조회 및 표 생성 (Realtime Database 연동 - 상위 10명 제한)
 async function renderRankingTable() {
   const listEl = document.getElementById('ranking-list');
   listEl.innerHTML = '<div style="padding:15px; text-align:center; color:#888;">데이터를 불러오는 중...</div>';
@@ -1202,7 +1325,6 @@ async function renderRankingTable() {
       ranks.push(childSnapshot.val());
     });
     
-    // 배열을 내림차순(높은 점수 우선)으로 정렬
     ranks.sort((a, b) => b.score - a.score);
     
     ranks.forEach((r, idx) => {
